@@ -35,3 +35,8 @@ Bot doimiy ishlashi uchun uni serverda (VPS, Railway, Render, PythonAnywhere va 
 pip install pytest
 python -m pytest
 ```
+
+## Mushuklar bozori boti
+
+Repoda alohida loyiha ham bor: [`mushuk_bot/`](mushuk_bot/README.md) — mushuk e'lonlari uchun
+Telegram bot. `.mcp.json` dagi SQLite MCP server uning `mushuk_bot/data/cats.db` bazasiga ulanadi.
