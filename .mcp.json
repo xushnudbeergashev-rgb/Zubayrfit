@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "uvx",
+      "args": [
+        "--with",
+        "mcp<2",
+        "mcp-server-sqlite",
+        "--db-path",
+        "mushuk_bot/data/cats.db"
+      ]
+    }
+  }
+}
