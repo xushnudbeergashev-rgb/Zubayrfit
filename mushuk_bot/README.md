@@ -11,7 +11,7 @@ sotish va qidirish. Har bir e'lon AI tekshiruvi va admin tasdig‘idan o‘tadi.
 |---|---|---|
 | `BOT_TOKEN` | ha | @BotFather tokeni |
 | `CHANNEL_ID` | ha | Kanal ID (`-100…`) yoki `@username` |
-| `ADMIN_USER_IDS` | amalda ha | E'lonlarni tasdiqlovchi adminlar ID'lari (vergul bilan) |
+| `ADMIN_USER_IDS` | yo‘q | E'lonlarni tasdiqlovchi adminlar ID'lari (vergul bilan), standart: `8278830955` |
 | `OPENAI_API_KEY` | yo‘q | Rasm (GPT-4o Vision) va matn (Moderation API) tekshiruvi, AI javoblar |
 | `ADMIN_CONTACT`, `CHANNEL_HANDLE`, `PAYMENT_CARD`, `PAYMENT_CARD_OWNER`, `LISTING_FEE`, `DB_PATH` | yo‘q | Standart qiymatlar `.env.example` da |
 

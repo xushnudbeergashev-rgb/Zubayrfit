@@ -4,6 +4,9 @@ import os
 from dotenv import load_dotenv
 
 
+DEFAULT_ADMIN_USER_IDS = "8278830955"
+
+
 @dataclass(frozen=True)
 class Settings:
     bot_token: str
@@ -38,7 +41,7 @@ class Settings:
         except ValueError:
             channel_id = raw_channel_id
 
-        raw_admin_ids = os.getenv("ADMIN_USER_IDS", "")
+        raw_admin_ids = os.getenv("ADMIN_USER_IDS", "").strip() or DEFAULT_ADMIN_USER_IDS
         admin_ids = frozenset(
             int(value.strip())
             for value in raw_admin_ids.split(",")
