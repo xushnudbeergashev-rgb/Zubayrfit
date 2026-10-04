@@ -26,6 +26,28 @@ python main.py
 
 Testlar: `pip install pytest && python -m pytest`
 
+## Serverga joylash (24/7)
+
+Bot faqat jarayon ishlab turganda javob beradi, shuning uchun uni doimiy
+ishlaydigan serverga qo‘ying.
+
+**Docker** (VPS, Railway, Render worker va h.k.):
+
+```bash
+cd mushuk_bot
+docker build -t mushuk-bot .
+docker run -d --restart=always --env-file .env -v mushuk-data:/app/data mushuk-bot
+```
+
+`-v mushuk-data:/app/data` bazani saqlab qoladi; usiz har qayta joylashda
+e'lonlar o‘chib ketadi.
+
+**Replit**: repo ildizidagi `.replit` tayyor. Secrets'ga `BOT_TOKEN`,
+`CHANNEL_ID`, `OPENAI_API_KEY` ni kiriting va **Deploy → Reserved VM** ni
+tanlang (Autoscale polling bot uchun yaramaydi). Diqqat: Replit deploy fayl
+tizimi har qayta deploy qilinganda tiklanadi, ya'ni `data/cats.db` o‘chadi.
+Bazani saqlash muhim bo‘lsa, Docker + volume yoki VPS afzal.
+
 ## Imkoniyatlar
 
 - **Menyu** faqat 3 bo‘lim: 📢 E'lon berish, 🔍 Mushuk qidirish, ❓ Savol-Javob (AI).

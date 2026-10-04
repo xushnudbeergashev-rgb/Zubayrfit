@@ -1,0 +1,7 @@
+modules = ["python-3.12"]
+run = ["sh", "-c", "cd mushuk_bot && pip install -q -r requirements.txt && python main.py"]
+
+[deployment]
+# A polling bot must run all the time: Reserved VM, not Autoscale.
+deploymentTarget = "vm"
+run = ["sh", "-c", "cd mushuk_bot && pip install -q -r requirements.txt && python main.py"]

@@ -1,0 +1,6 @@
+.env
+data/
+tests/
+conftest.py
+**/__pycache__/
+*.pyc
