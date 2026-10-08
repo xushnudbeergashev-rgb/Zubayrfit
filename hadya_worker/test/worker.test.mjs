@@ -37,6 +37,8 @@ function makeD1() {
 const calls = [];
 let downloads = 0; // Telegram'dan fayl yuklab olishlar soni
 let msgId = 1000;
+// chat_id → { code, description }: shu foydalanuvchiga sendMessage xato qaytaradi
+const failSend = new Map();
 const lastCall = (method) => [...calls].reverse().find((c) => c.method === method);
 const callsOf = (method) => calls.filter((c) => c.method === method);
 globalThis.fetch = async (url, opts = {}) => {
@@ -50,6 +52,8 @@ globalThis.fetch = async (url, opts = {}) => {
   } else if (opts.body) body = JSON.parse(opts.body);
   calls.push({ method, body });
   const ok = (result) => new Response(JSON.stringify({ ok: true, result }));
+  const fail = method === "sendMessage" && failSend.get(Number(body.chat_id));
+  if (fail) return new Response(JSON.stringify({ ok: false, error_code: fail.code, description: fail.description }), { status: fail.code });
   switch (method) {
     case "getMe": return ok({ id: 999, username: "hadyaga_mushuk_bot" });
     case "sendMediaGroup":
@@ -163,6 +167,7 @@ test("faqat telefon bilan e'lon: kanal postida Telegram qatori yo'q", async () =
   // adminga kim yuborgani ko'rsatiladi (ban qilish uchun ID kerak)
   const toAdmin = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1);
   assert.match(toAdmin.body.text, /ID: <code>222<\/code>/);
+  assert.doesNotMatch(toAdmin.body.text, /egasiniki bo'lmasligi/); // username yozilmagan — ogohlantirish yo'q
 });
 
 test("faqat username bilan e'lon: telefon qatori yo'q, t.me havolasi ham qabul qilinadi", async () => {
@@ -173,6 +178,9 @@ test("faqat username bilan e'lon: telefon qatori yo'q, t.me havolasi ham qabul q
   const cap = lastCall("sendMediaGroup").body.media[0].caption;
   assert.match(cap, /Telegram: @boshqa_nom/);
   assert.doesNotMatch(cap, /📞/);
+  // profildagi username (ali_real) bilan mos emas → adminga ogohlantirish
+  const toAdmin = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body.text;
+  assert.match(toAdmin, /Username egasiniki bo'lmasligi mumkin.*@boshqa_nom.*@ali_real/);
 });
 
 test("tekshiruvdagi e'lon rasmi kalitsiz ochilmaydi, egasi kalit bilan ko'radi", async () => {
@@ -333,5 +341,135 @@ test("import qilingan post yopilganda formatlash (entities) saqlanadi", async ()
 
 test("sxema versiyasi saqlanadi (keyingi ishga tushishda migratsiya qayta ishlamaydi)", async () => {
   const v = env.DB.raw.prepare("SELECT value FROM settings WHERE key='schema_v'").get();
-  assert.equal(v.value, "2");
+  assert.equal(v.value, "3");
+});
+
+// ---------------------------------------------------------------- 2-bosqich: tuzatishlar
+const T = () => Math.floor(Date.now() / 1000);
+// Kanalda turgan e'lonni to'g'ridan-to'g'ri bazaga qo'shish
+function insertPublished(userId, { publishedAgo = 0, kind = "hadya" } = {}) {
+  const data = JSON.stringify({ phone: "+998901234567", breed: "oddiy", age: "1 yosh", gender: "u", delivery: "bor", health: [] });
+  const r = env.DB.raw.prepare(
+    "INSERT INTO listings (user_id, username, kind, region, district, data, media, status, channel_msg_id, channel_username, created_at, published_at, check_at) " +
+    "VALUES (?, NULL, ?, 'Toshkent shahri', 'Chilonzor tumani', ?, '[]', 'published', ?, 'Hadyagamushuklar', ?, ?, NULL)"
+  ).run(userId, kind, data, ++msgId, T() - publishedAgo, T() - publishedAgo);
+  return Number(r.lastInsertRowid);
+}
+const makeUser = (id, daysOld) => env.DB.raw.prepare(
+  "INSERT OR REPLACE INTO users (id, username, first_name, banned, created_at) VALUES (?, ?, ?, 0, ?)"
+).run(id, "u" + id + "_name", "U" + id, T() - daysOld * 86400);
+const runCron = async () => {
+  await worker.scheduled({}, env, ctx);
+  await Promise.all(pending.splice(0));
+};
+
+test("shikoyat: kunlik limit 5 ta", async () => {
+  makeUser(700, 30);
+  for (let i = 0; i < 5; i++) env.DB.raw.prepare("INSERT INTO reports VALUES (?, 700, 'other', ?)").run(90000 + i, T());
+  const id = insertPublished(USER.id);
+  const j = await reqJson(`/api/listings/${id}/report`, { method: "POST", user: { id: 700, first_name: "U" }, body: { reason: "scam" } });
+  assert.match(j.error, /5 tadan ortiq/);
+});
+
+test("shikoyat: 3 ta ishonchli shikoyatda yashiriladi, yangi akkaunt hisobga olinmaydi, admin qaytara oladi", async () => {
+  const id = insertPublished(USER.id);
+  [801, 802, 803, 804].forEach((u) => makeUser(u, 30)); // eski (ishonchli) akkauntlar
+  makeUser(810, 1); // yangi akkaunt
+  const report = (uid) => reqJson(`/api/listings/${id}/report`, { method: "POST", user: { id: uid, first_name: "U" + uid }, body: { reason: "scam" } });
+  const adminMsgs = () => callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).length;
+
+  let before = adminMsgs();
+  assert.equal((await report(810)).ok, true); // birinchi shikoyat → adminga xabar
+  assert.equal(adminMsgs(), before + 1);
+  before = adminMsgs();
+  await report(801);
+  await report(802); // jami 3 ta, lekin ishonchlisi 2 ta → yashirilmaydi, admin bezovta qilinmaydi
+  assert.equal(adminMsgs(), before);
+  assert.equal(row(id).status, "published");
+  await report(803); // 3-ishonchli → yashiriladi
+  assert.equal(row(id).status, "reported");
+  const hidden = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body;
+  assert.match(hidden.text, /vaqtincha yashirildi.*4 ta shikoyat \(3 tasi ishonchli/);
+  assert.ok(JSON.stringify(hidden.reply_markup).includes(`a:restore:${id}`));
+  assert.ok(callsOf("sendMessage").some((c) => c.body.chat_id === USER.id && /vaqtincha olindi/.test(c.body.text)));
+  assert.equal((await req(`/api/listings/${id}`)).status, 404); // ilovada ko'rinmaydi
+  const my = await reqJson("/api/my", { user: USER });
+  assert.equal(my.items.find((i) => i.id === id).status, "reported");
+
+  await cb({ id: ADMIN, first_name: "Admin" }, `a:restore:${id}`);
+  assert.equal(row(id).status, "published");
+  assert.ok(row(id).reports_after);
+  before = adminMsgs();
+  await report(804); // qaytarilgandan keyingi birinchi shikoyat → yana «birinchi» xabar, yashirilmaydi
+  assert.equal(row(id).status, "published");
+  assert.equal(adminMsgs(), before + 1);
+});
+
+test("yashirilgan e'lonni egasi yoki admin yopa oladi", async () => {
+  const id = insertPublished(USER.id);
+  env.DB.raw.prepare("UPDATE listings SET status='reported' WHERE id=?").run(id);
+  const j = await reqJson(`/api/my/${id}/close`, { method: "POST", user: USER, body: { status: "given" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(row(id).status, "given");
+});
+
+test("30 kun: vaqtincha xato bo'lsa «so'raldi» belgisi qo'yilmaydi, keyin qayta uriniladi", async () => {
+  const owner = 444;
+  const id = insertPublished(owner, { publishedAgo: 31 * 86400 });
+  failSend.set(owner, { code: 429, description: "Too Many Requests" });
+  await runCron();
+  assert.equal(row(id).asked_at, null);
+  assert.equal(row(id).ask_tries, 1);
+  failSend.delete(owner);
+  await runCron();
+  assert.ok(row(id).asked_at, "ikkinchi urinishda yetib bordi");
+  assert.equal(row(id).ask_blocked, null);
+});
+
+test("30 kun: egasi botni bloklagan bo'lsa, 3 emas 15 kundan keyin yopiladi", async () => {
+  const owner = 445;
+  const id = insertPublished(owner, { publishedAgo: 31 * 86400 });
+  failSend.set(owner, { code: 403, description: "Forbidden: bot was blocked by the user" });
+  await runCron();
+  assert.equal(row(id).ask_blocked, 1);
+  env.DB.raw.prepare("UPDATE listings SET asked_at=? WHERE id=?").run(T() - 4 * 86400, id);
+  await runCron();
+  assert.equal(row(id).status, "published", "4 kun — hali yopilmaydi");
+  env.DB.raw.prepare("UPDATE listings SET asked_at=? WHERE id=?").run(T() - 16 * 86400, id);
+  const n = callsOf("sendMessage").filter((c) => c.body.chat_id === owner).length;
+  await runCron();
+  assert.equal(row(id).status, "closed");
+  assert.equal(callsOf("sendMessage").filter((c) => c.body.chat_id === owner).length, n, "bloklagan egaga yozilmaydi");
+  failSend.delete(owner);
+});
+
+test("30 kun: 5 marta yetmasa, bloklangan deb hisoblanadi", async () => {
+  const owner = 446;
+  const id = insertPublished(owner, { publishedAgo: 31 * 86400 });
+  env.DB.raw.prepare("UPDATE listings SET ask_tries=4 WHERE id=?").run(id);
+  failSend.set(owner, { code: 500, description: "Internal Server Error" });
+  await runCron();
+  assert.equal(row(id).ask_blocked, 1);
+  assert.equal(row(id).ask_tries, 5);
+  failSend.delete(owner);
+});
+
+test("byudjet: bitta ishga tushishda chegaradan oshmaydi, qolganlari keyingi safar", async () => {
+  const owner = 555;
+  const ids = Array.from({ length: 30 }, () => insertPublished(owner, { publishedAgo: 31 * 86400 }));
+  const logs = [];
+  const orig = console.log;
+  console.log = (...a) => logs.push(a.join(" "));
+  try {
+    await runCron();
+  } finally {
+    console.log = orig;
+  }
+  const used = Number(logs.find((l) => l.startsWith("Cron:")).match(/(\d+) ta so'rov/)[1]);
+  assert.ok(used <= 40, `so'rovlar: ${used}`);
+  const asked = () => ids.filter((id) => row(id).asked_at).length;
+  const first = asked();
+  assert.ok(first > 0 && first < 30, `birinchi safar so'ralganlar: ${first}`);
+  for (let i = 0; i < 6; i++) await runCron();
+  assert.equal(asked(), 30, "keyingi ishga tushishlarda hammasi so'raldi");
 });

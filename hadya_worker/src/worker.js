@@ -10,7 +10,7 @@
 //   OPENAI_MODEL  (Text)    ixtiyoriy, standart: gpt-4o-mini
 //   SETUP_KEY     (Secret)  /setup sahifasini ochish kaliti (o'zingiz o'ylab topasiz, masalan 20 ta tasodifiy belgi)
 // Bog'lanish (Settings → Bindings): D1 baza, nomi DB
-// Triggers → Cron: 0 * * * * (har soatda — eslatmalar, muddatlar, tozalash)
+// Triggers → Cron: */15 * * * * (har 15 daqiqada — eslatmalar, muddatlar, tozalash; har soatda ham ishlaydi, faqat sekinroq)
 // Birinchi marta: brauzerda https://<worker-manzili>/setup?key=<SETUP_KEY> ni oching.
 
 const INDEX_HTML = __INDEX_HTML__;
@@ -29,15 +29,18 @@ const REJECT_REASONS = {
   kind: "E'lon turi noto'g'ri tanlangan (masalan, sotuv hadya deb berilgan)",
   dup: "Bu e'lon avval joylangan",
   rules: "Kanal qoidalariga mos emas",
+  contact: "Ko'rsatilgan Telegram username sizniki emas",
 };
 const S = {
   PENDING: "pending", AWAIT_PAY: "awaiting_payment", PAY_REVIEW: "payment_review", PUBLISHING: "publishing",
   PUBLISHED: "published", GIVEN: "given", SOLD: "sold", CLOSED: "closed", REJECTED: "rejected", EXPIRED: "expired",
+  REPORTED: "reported",
 };
 const STATUS_TEXT = {
   pending: "Admin tekshiruvida", awaiting_payment: "To'lov kutilmoqda", payment_review: "Chek tekshirilmoqda",
   publishing: "Joylanmoqda", published: "Kanalda", given: "Berildi", sold: "Sotildi", closed: "Dolzarb emas",
   rejected: "Rad etildi", expired: "Muddati o'tdi", hidden: "Ilovadan olingan",
+  reported: "Shikoyat sabab tekshiruvda",
 };
 const DEFAULT_PRICE = 7000;
 const FREE_PER_DAY = 3;
@@ -50,11 +53,21 @@ const MB = 1024 * 1024;
 const DAY = 86400;
 const CHECK_DAYS = 30; // shuncha kundan keyin egasidan «Hali dolzarbmi?» deb so'raladi
 const ANSWER_DAYS = 3; // javob bo'lmasa, shuncha kundan keyin «Dolzarb emas» deb yopiladi
+const BLOCKED_DAYS = 15; // egasi botni bloklagan bo'lsa (savol yetib bormasa), shuncha kundan keyin yopiladi
+const ASK_MAX_TRIES = 5; // savol vaqtinchalik xato tufayli shuncha marta yetmasa — bloklangan deb hisoblanadi
+const REPORTS_PER_DAY = 5; // bir kishi kuniga ko'pi bilan shuncha shikoyat yubora oladi
+const REPORT_HIDE = 3; // shuncha xil odam shikoyat qilsa, e'lon ilovadan vaqtincha yashiriladi
+const REPORTER_MIN_DAYS = 7; // shikoyati «yashirish»ga hisoblanishi uchun akkaunt botda kamida shuncha kun bo'lsin
+// Cloudflare bepul tarifida bitta ishga tushishda ~50 ta tashqi so'rov (Telegram + baza) mumkin.
+// Fon vazifalari shu chegaradan oshmaslik uchun o'z so'rovlarini sanaydi va zaxira qoldiradi.
+const RUN_BUDGET = 40;
 const PAY_REMIND_HOURS = 24; // to'lov muddati tugashiga shuncha soat qolganda eslatma
 const ADMIN_REMIND_HOURS = 6; // admin shuncha soatdan beri ko'rmagan e'lonlar haqida eslatma
 const TEMP_KEEP_DAYS = 2; // vaqtinchalik sozlamalar (albom, chek tanlovi) shuncha kun saqlanadi
 // Shu holatdagi e'lonlar hammaga ochiq (ilovada ko'rinadi)
 const PUBLIC_STATUSES = ["published", "given", "sold", "closed"];
+// E'lon yopilishi mumkin bo'lgan holatlar: kanalda faol yoki shikoyat sabab vaqtincha yashirilgan
+const OPEN_STATUSES = ["published", "reported"];
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT,
@@ -82,9 +95,14 @@ const MIGRATIONS = [
   "ALTER TABLE listings ADD COLUMN asked_at INTEGER", // savol yuborilgan vaqt (javob kutilmoqda)
   "ALTER TABLE listings ADD COLUMN pay_reminded INTEGER", // to'lov eslatmasi yuborilganmi
   "ALTER TABLE settings ADD COLUMN updated_at INTEGER", // vaqtinchalik yozuvlarni tozalash uchun
+  "ALTER TABLE listings ADD COLUMN ask_tries INTEGER", // «Hali dolzarbmi?» savolini yuborishga urinishlar
+  "ALTER TABLE listings ADD COLUMN ask_blocked INTEGER", // savol yetmadi (egasi botni bloklagan)
+  // admin «Qaytarish» bosgandagi oxirgi shikoyat raqami (rowid): faqat undan keyingi shikoyatlar sanaladi
+  "ALTER TABLE listings ADD COLUMN reports_after INTEGER",
+  "CREATE INDEX IF NOT EXISTS ix_reports_user ON reports(user_id, created_at)",
 ];
 // Sxema o'zgarsa shu raqam oshiriladi — shunda migratsiyalar bir marta qayta ishga tushadi
-const SCHEMA_VERSION = "2";
+const SCHEMA_VERSION = "3";
 let schemaReady = false;
 async function ensureSchema(env, force = false) {
   if ((schemaReady && !force) || !env.DB) return;
@@ -130,10 +148,25 @@ async function tg(env, method, body) {
     opts.headers = { "content-type": "application/json" };
     opts.body = JSON.stringify(body || {});
   }
+  if (env.__ops) env.__ops.n++; // fon vazifasida so'rovlar sanaladi
   const r = await fetch(`${base}/bot${env.BOT_TOKEN}/${method}`, opts);
-  const j = await r.json().catch(() => ({ ok: false, description: `HTTP ${r.status}` }));
-  if (!j.ok) throw new Error(`${method}: ${j.description}`);
+  const j = await r.json().catch(() => ({ ok: false, error_code: r.status, description: `HTTP ${r.status}` }));
+  if (!j.ok) {
+    const e = new Error(`${method}: ${j.description}`);
+    e.code = j.error_code || 0; // 403 — foydalanuvchi botni bloklagan; 429/5xx — vaqtincha xato
+    throw e;
+  }
   return j.result;
+}
+// Xabar yuborish natijasi: { ok: true } | { ok: false, blocked: true/false }.
+// blocked — doimiy xato (bot bloklangan yoki akkaunt o'chirilgan); aks holda keyinroq qayta urinish mumkin.
+async function tgSend(env, body) {
+  try {
+    return { ok: true, result: await tg(env, "sendMessage", body) };
+  } catch (e) {
+    console.log(e.message);
+    return { ok: false, blocked: e.code === 403 };
+  }
 }
 const tgSafe = (env, method, body) =>
   tg(env, method, body).catch((e) => {
@@ -372,11 +405,20 @@ function mediaItems(items, cap) {
 }
 
 // ---------------------------------------------------------------- asosiy amallar
-async function sendToAdmins(env, l, files) {
+// Formaga yozilgan username Telegram profilidagidan farq qilsa, adminga ogohlantirish matni.
+// (Bot API username bo'yicha akkaunt egasini aniqlay olmaydi, shuning uchun qarorni admin qiladi.)
+function usernameWarning(formName, profileName) {
+  if (!formName || (profileName && formName.toLowerCase() === profileName.toLowerCase())) return "";
+  return `\n⚠️ <b>Username egasiniki bo'lmasligi mumkin</b>: formada @${esc(formName)}, ` +
+    (profileName ? `profilda @${esc(profileName)}` : "profilda username yo'q");
+}
+
+async function sendToAdmins(env, l, files, profileUsername = null) {
   const bot = await botUsername(env);
   const cap = caption(env, l, bot);
   const header = `🆕 <b>${KIND_NAMES[l.kind]}</b> e'lon #${l.id} — ${esc(l.region)}, ${esc(l.district)}\n` +
-    `👤 <a href="tg://user?id=${l.user_id}">${esc(l.first_name || "Foydalanuvchi")}</a> (ID: <code>${l.user_id}</code>)`;
+    `👤 <a href="tg://user?id=${l.user_id}">${esc(l.first_name || "Foydalanuvchi")}</a> (ID: <code>${l.user_id}</code>)` +
+    usernameWarning(l.username, profileUsername);
   let stored = null;
   const refs = [];
   for (const admin of adminIds(env)) {
@@ -440,7 +482,7 @@ async function publish(env, id) {
 }
 
 async function closeListing(env, l, status) {
-  if (!(await changeStatus(env, l.id, S.PUBLISHED, status, { closed_at: now() }))) return false;
+  if (!(await changeStatus(env, l.id, OPEN_STATUSES, status, { closed_at: now() }))) return false;
   if (l.data.raw !== undefined) {
     // Kanaldan import qilingan post: asl matn va formatlash saqlanadi, faqat kontakt qatorlari almashtiriladi
     const isCap = l.media.length > 0;
@@ -660,12 +702,16 @@ async function importPost(env, m, chMsgId, chUsername, date, doneMode = false) {
 }
 
 const adminManageKb = (l) => {
-  if (l.status !== S.PUBLISHED) return undefined;
+  if (!OPEN_STATUSES.includes(l.status)) return undefined;
   const row = [];
   if (l.kind === "hadya") row.push({ text: "✅ Berildi", callback_data: `a:given:${l.id}` });
   if (l.kind === "sotuv") row.push({ text: "✅ Sotildi", callback_data: `a:sold:${l.id}` });
   row.push({ text: "⛔️ Dolzarb emas", callback_data: `a:closed:${l.id}` });
-  return { inline_keyboard: [row, [{ text: "🗑 Ilovadan olib tashlash", callback_data: `a:hide:${l.id}` }]] };
+  const kb = [row];
+  // Shikoyat sabab yashirilgan e'lonni admin ilovaga qaytara oladi
+  if (l.status === S.REPORTED) kb.push([{ text: "↩️ Ilovaga qaytarish (shikoyat asossiz)", callback_data: `a:restore:${l.id}` }]);
+  kb.push([{ text: "🗑 Ilovadan olib tashlash", callback_data: `a:hide:${l.id}` }]);
+  return { inline_keyboard: kb };
 };
 
 async function onForwardFromChannel(env, m) {
@@ -895,12 +941,12 @@ async function onCallback(env, cq) {
   if (ns === "u") {
     const l = await getListing(env, Number(idStr));
     if (!l || l.user_id !== cq.from.id) return answer("E'lon topilmadi.", true);
-    if (l.status !== S.PUBLISHED) {
+    if (!OPEN_STATUSES.includes(l.status)) {
       await setKb(null);
       return answer("Bu e'lon allaqachon yopilgan.", true);
     }
     if (a === "keep") {
-      await updateListing(env, l.id, { check_at: now() + CHECK_DAYS * DAY, asked_at: null });
+      await updateListing(env, l.id, { check_at: now() + CHECK_DAYS * DAY, asked_at: null, ask_tries: null, ask_blocked: null });
       await edit(chat, mid, `👍 #${l.id} e'loni faol qoldi. ${CHECK_DAYS} kundan keyin yana so'raymiz.`);
       return answer("Faol qoldi");
     }
@@ -918,9 +964,17 @@ async function onCallback(env, cq) {
   // Admin: kanaldagi e'lonni boshqarish (forward qilingan postlar uchun)
   if (ns === "a") {
     if (a === "hide") {
-      if (!(await changeStatus(env, id, [S.PUBLISHED, S.GIVEN, S.SOLD, S.CLOSED], "hidden"))) return answer("Holati allaqachon o'zgargan.", true);
+      if (!(await changeStatus(env, id, [S.PUBLISHED, S.REPORTED, S.GIVEN, S.SOLD, S.CLOSED], "hidden"))) return answer("Holati allaqachon o'zgargan.", true);
       await done(`🗑 #${id} ilovadan olib tashlandi (kanaldagi post o'zgarmadi) — ${who}`);
       return answer("Olib tashlandi");
+    }
+    // Shikoyat asossiz: e'lon ilovaga qaytadi, eski shikoyatlar endi hisobga olinmaydi
+    if (a === "restore") {
+      const lastReport = await env.DB.prepare("SELECT COALESCE(MAX(rowid), 0) AS n FROM reports").first("n");
+      if (!(await changeStatus(env, id, S.REPORTED, S.PUBLISHED, { reports_after: lastReport }))) return answer("Holati allaqachon o'zgargan.", true);
+      await done(`↩️ #${id} ilovaga qaytarildi, shikoyatlar asossiz deb topildi — ${who}`);
+      if (l.user_id) await tgSafe(env, "sendMessage", { chat_id: l.user_id, text: `✅ E'loningiz #${id} tekshirildi va ilovaga qaytarildi.` });
+      return answer("Qaytarildi");
     }
     // Shikoyat xabaridagi tugmalar
     if (a === "ignore") {
@@ -1111,32 +1165,59 @@ const REPORT_REASONS = {
   wrong: "Ma'lumot noto'g'ri (narx, tur, joy)",
   other: "Boshqa sabab",
 };
+// Adminlarni xabarga ko'mmaslik uchun: e'lon bo'yicha faqat BIRINCHI shikoyat va e'lon YASHIRILGANDA xabar boradi.
+// Oraliqdagi shikoyatlar bazaga yoziladi va yashirish xabarida hammasi birga ko'rsatiladi.
 async function apiReport(env, request, id) {
   const user = await authUser(env, request.headers.get("x-init-data"));
   if (!user) return err("Shikoyat qilish uchun ilovani bot orqali oching.", 401);
+  await upsertUser(env, user);
   if (await isBanned(env, user.id)) return err("Sizga bu amal cheklangan.", 403);
   const l = await getListing(env, id);
   if (!l || l.status !== S.PUBLISHED) return err("E'lon topilmadi.", 404);
   if (l.user_id === user.id) return err("O'z e'loningizga shikoyat qilib bo'lmaydi.");
+  const today = await env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE user_id=? AND created_at>?")
+    .bind(user.id, now() - DAY).first("n");
+  if (today >= REPORTS_PER_DAY) return err(`Bir kunda ${REPORTS_PER_DAY} tadan ortiq shikoyat yuborib bo'lmaydi. Ertaga urinib ko'ring.`, 429);
   const b = await request.json().catch(() => ({}));
   const reason = REPORT_REASONS[b.reason] ? b.reason : "other";
   const note = String(b.note || "").trim().slice(0, 300);
   const ins = await env.DB.prepare("INSERT OR IGNORE INTO reports (listing_id, user_id, reason, created_at) VALUES (?,?,?,?)")
     .bind(id, user.id, reason + (note ? ": " + note : ""), now()).run();
   if (ins.meta.changes !== 1) return err("Bu e'longa allaqachon shikoyat yuborgansiz. Rahmat!");
-  const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE listing_id=?").bind(id).first("n");
-  const from = user.username ? "@" + esc(user.username) : esc(user.first_name || "Foydalanuvchi");
+
+  // Admin «Qaytarish» bosgan bo'lsa, undan oldingi shikoyatlar hisobga olinmaydi.
+  // «Ishonchli» shikoyat — botda kamida REPORTER_MIN_DAYS kundan beri bor va ban qilinmagan odamniki:
+  // shunda yangi ochilgan soxta akkauntlar bilan begona e'lonni yashirib bo'lmaydi.
+  const { results: reps } = await env.DB.prepare(
+    "SELECT r.reason, r.user_id, u.username, u.first_name, (u.created_at < ? AND u.banned = 0) AS trusted " +
+    "FROM reports r LEFT JOIN users u ON u.id = r.user_id WHERE r.listing_id=? AND r.rowid > ? ORDER BY r.rowid"
+  ).bind(now() - REPORTER_MIN_DAYS * DAY, id, l.reports_after || 0).all();
+  const trusted = reps.filter((r) => r.trusted).length;
+  const hide = trusted >= REPORT_HIDE && (await changeStatus(env, id, S.PUBLISHED, S.REPORTED));
+  if (!hide && reps.length !== 1) return json({ ok: true }); // oraliq shikoyat — adminni bezovta qilmaymiz
+
+  const who = (r) => (r.username ? "@" + esc(r.username) : esc(r.first_name || "Foydalanuvchi")) + ` (<code>${r.user_id}</code>)`;
+  const why = (r) => esc(REPORT_REASONS[r.reason.split(":")[0]] || "") + (r.reason.includes(":") ? " — " + esc(r.reason.slice(r.reason.indexOf(":") + 1).trim()) : "");
   const link = l.channel_username ? `\nhttps://t.me/${l.channel_username}/${l.channel_msg_id}` : "";
-  const text = `🚩 <b>Shikoyat</b>: e'lon #${id} (${KIND_NAMES[l.kind]}, ${esc(placeText(l))})${link}\n` +
-    `Sabab: ${esc(REPORT_REASONS[reason])}${note ? "\nIzoh: " + esc(note) : ""}\n` +
-    `Kimdan: ${from} (<code>${user.id}</code>)\nBu e'longa jami shikoyatlar: ${total}`;
-  const kb = adminManageKb(l);
+  const text = hide
+    ? `🙈 <b>E'lon #${id} ilovadan vaqtincha yashirildi</b>: ${reps.length} ta shikoyat (${trusted} tasi ishonchli akkauntdan)\n` +
+      `${KIND_NAMES[l.kind]}, ${esc(placeText(l))}${link}\n\n` + reps.map((r) => `• ${why(r)} — ${who(r)}`).join("\n") +
+      "\n\nKanaldagi post o'zgarmadi. Qaror qiling:"
+    : `🚩 <b>Shikoyat</b>: e'lon #${id} (${KIND_NAMES[l.kind]}, ${esc(placeText(l))})${link}\n` +
+      `Sabab: ${why(reps[0])}\nKimdan: ${who(reps[0])}\n\n` +
+      `Keyingi shikoyatlar alohida yuborilmaydi. ${REPORT_HIDE} ta ishonchli shikoyat bo'lsa, e'lon avtomatik yashiriladi.`;
+  const kb = adminManageKb({ ...l, status: hide ? S.REPORTED : l.status });
   kb.inline_keyboard.push([
     ...(l.user_id ? [{ text: "🚫 Egasini ban qilish", callback_data: `a:ban:${id}` }] : []),
-    { text: "👌 E'tiborsiz qoldirish", callback_data: `a:ignore:${id}` },
+    ...(hide ? [] : [{ text: "👌 E'tiborsiz qoldirish", callback_data: `a:ignore:${id}` }]),
   ]);
   for (const admin of adminIds(env)) {
     await tgSafe(env, "sendMessage", { chat_id: admin, text, parse_mode: "HTML", reply_markup: kb, disable_web_page_preview: true });
+  }
+  if (hide && l.user_id) {
+    await tgSafe(env, "sendMessage", { chat_id: l.user_id,
+      text: `⚠️ E'loningiz #${id} (${shortTitle(l)}) bo'yicha bir nechta shikoyat tushdi va u admin tekshirguncha ilovadan vaqtincha olindi. ` +
+        "Kanaldagi post joyida. Savolingiz bo'lsa, adminga yozing." });
   }
   return json({ ok: true });
 }
@@ -1166,8 +1247,10 @@ async function apiMedia(env, request, ctx, url, id, idx) {
   if (thumb && m.type === "video" && !m.thumb) return new Response("Topilmadi", { status: 404 });
   const isVideo = m.type === "video" && !thumb;
 
-  // Rasmlar Cloudflare keshida saqlanadi: keyingi ko'rishlarda Telegram'ga umuman murojaat qilinmaydi.
-  // (Faqat ochiq e'lonlar; kalit kesh manziliga kirmaydi — tekshiruv yuqorida bo'ldi.)
+  // Cloudflare keshi: Worker O'Z DOMENINGIZGA ulangan bo'lsa, rasm bir marta yuklanib, keyingi ko'rishlarda
+  // Telegram'ga murojaat qilinmaydi. *.workers.dev manzilida Cloudflare keshni deyarli ishlatmaydi —
+  // u holda asosiy tejash brauzer keshi (7 kun) va yuqoridagi file_path xotirasidan keladi.
+  // (Faqat ochiq e'lonlar keshlanadi; kalit kesh manziliga kirmaydi — tekshiruv yuqorida bo'ldi.)
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const cacheKey = new Request(`${url.origin}/__media/${id}/${idx}/${thumb ? "t" : "f"}/${m.file_id.slice(-16)}`);
   if (cache && !isVideo && isPublic) {
@@ -1216,7 +1299,7 @@ async function apiClose(env, request, id) {
   const { status } = await request.json().catch(() => ({}));
   if (!l || l.user_id !== user.id) return err("E'lon topilmadi.", 404);
   const allowed = { hadya: ["given", "closed"], sotuv: ["sold", "closed"], reklama: ["closed"] }[l.kind];
-  if (!allowed.includes(status) || l.status !== S.PUBLISHED) return err("Bu amalni bajarib bo'lmaydi.");
+  if (!allowed.includes(status) || !OPEN_STATUSES.includes(l.status)) return err("Bu amalni bajarib bo'lmaydi.");
   if (!(await closeListing(env, l, status))) return err("E'lon holati allaqachon o'zgargan.");
   return json({ ok: true });
 }
@@ -1266,7 +1349,7 @@ async function apiSubmit(env, request) {
   const id = ins.meta.last_row_id;
 
   try {
-    await sendToAdmins(env, await getListing(env, id), files);
+    await sendToAdmins(env, await getListing(env, id), files, user.username || null);
   } catch (e) {
     console.log("Adminlarga yuborilmadi:", e.message);
     await env.DB.prepare("DELETE FROM listings WHERE id=?").bind(id).run();
@@ -1507,35 +1590,59 @@ const setupLocked = (env) => setupPage([["bad", env.SETUP_KEY
 // ---------------------------------------------------------------- fon vazifalari (cron, har soatda)
 const sendTo = (env, chatId, text, extra = {}) => tgSafe(env, "sendMessage", { chat_id: chatId, text, ...extra });
 
+// --- So'rovlar byudjeti ---
+// Fon vazifasi bitta ishga tushishda nechta tashqi so'rov (Telegram + D1 baza) qilganini sanaydi.
+// Har bir ishdan oldin «bunga yetadimi?» deb tekshiriladi; yetmasa — to'xtaydi va qolgan ishlar
+// KEYINGI ishga tushishda bajariladi. Ish faqat muvaffaqiyatli bajarilgandan keyin «bajarildi» deb
+// belgilanadi, shuning uchun hech narsa jimgina yo'qolmaydi.
+function countingDB(db, ops) {
+  const wrap = (st) => ({
+    bind: (...a) => wrap(st.bind(...a)),
+    first: (...a) => (ops.n++, st.first(...a)),
+    all: () => (ops.n++, st.all()),
+    run: () => (ops.n++, st.run()),
+  });
+  return { prepare: (sql) => wrap(db.prepare(sql)), batch: (list) => ((ops.n += list.length), db.batch(list)) };
+}
+const canSpend = (env, cost) => !env.__ops || env.__ops.n + cost <= RUN_BUDGET;
+// Taxminiy narxlar (so'rovlar soni) — ehtiyot uchun biroz yuqori olingan
+const COST = { expire: 2, remindPay: 2, close: 6, ask: 2 };
+
 async function expirePayments(env) {
-  const { results } = await env.DB.prepare("SELECT id, user_id FROM listings WHERE status=? AND pay_deadline<?")
+  const { results } = await env.DB.prepare("SELECT id, user_id FROM listings WHERE status=? AND pay_deadline<? LIMIT 10")
     .bind(S.AWAIT_PAY, now()).all();
   for (const l of results) {
+    if (!canSpend(env, COST.expire)) return;
     if (await changeStatus(env, l.id, S.AWAIT_PAY, S.EXPIRED)) {
       await sendTo(env, l.user_id, `⌛️ E'lon #${l.id} uchun to'lov muddati o'tdi, e'lon bekor qilindi. Kerak bo'lsa, qayta yuboring.`);
     }
   }
 }
 
-// To'lov muddati tugashiga PAY_REMIND_HOURS qolganda bir marta eslatish
+// To'lov muddati tugashiga PAY_REMIND_HOURS qolganda bir marta eslatish.
+// «Eslatildi» belgisi faqat xabar yetib borganda (yoki foydalanuvchi botni bloklagan bo'lsa) qo'yiladi.
 async function remindPayments(env) {
   const { results } = await env.DB.prepare(
-    "SELECT id, user_id, price_due, pay_deadline FROM listings WHERE status=? AND pay_deadline<? AND pay_reminded IS NULL"
+    "SELECT id, user_id, price_due, pay_deadline FROM listings WHERE status=? AND pay_deadline<? AND pay_reminded IS NULL LIMIT 10"
   ).bind(S.AWAIT_PAY, now() + PAY_REMIND_HOURS * 3600).all();
+  if (!results.length || !canSpend(env, 3 + COST.remindPay)) return;
   const card = await getSetting(env, "card", "");
   const owner = await getSetting(env, "card_owner", "");
+  const price = await getPrice(env);
   for (const l of results) {
-    await updateListing(env, l.id, { pay_reminded: now() });
+    if (!canSpend(env, COST.remindPay)) return;
     const left = Math.max(1, Math.round((l.pay_deadline - now()) / 3600));
-    await sendTo(env, l.user_id,
+    const r = await tgSend(env, { chat_id: l.user_id, parse_mode: "HTML", text:
       `⏰ Eslatma: e'lon #${l.id} uchun to'lov muddati tugashiga ${left} soat qoldi.\n\n` +
-      `Summa: <b>${fmtSum(l.price_due || (await getPrice(env)))}</b>\nKarta: <code>${esc(card)}</code>\n${esc(owner)}\n\n` +
-      "To'lovni qilib, chek rasmini shu botga yuboring.", { parse_mode: "HTML" });
+      `Summa: <b>${fmtSum(l.price_due || price)}</b>\nKarta: <code>${esc(card)}</code>\n${esc(owner)}\n\n` +
+      "To'lovni qilib, chek rasmini shu botga yuboring." });
+    if (r.ok || r.blocked) await updateListing(env, l.id, { pay_reminded: now() });
   }
 }
 
 // Admin uzoq vaqt ko'rmagan e'lonlar haqida eslatma (har ADMIN_REMIND_HOURS soatda ko'pi bilan bir marta)
 async function remindAdmins(env) {
+  if (!canSpend(env, 4 + adminIds(env).length)) return;
   const last = Number(await getSetting(env, "admin_reminded", 0));
   if (now() - last < ADMIN_REMIND_HOURS * 3600 - 300) return;
   const old = now() - ADMIN_REMIND_HOURS * 3600;
@@ -1544,17 +1651,19 @@ async function remindAdmins(env) {
     env.DB.prepare("SELECT COUNT(*) AS n FROM listings WHERE status=?").bind(S.PAY_REVIEW).first("n"),
   ]);
   if (!pending && !pay) return;
-  await setSetting(env, "admin_reminded", now());
   const lines = ["⏰ <b>Ko'rib chiqilmagan e'lonlar bor</b>"];
   if (pending) lines.push(`• ${pending} ta e'lon ${ADMIN_REMIND_HOURS} soatdan ko'p tekshiruv kutmoqda`);
   if (pay) lines.push(`• ${pay} ta to'lov cheki tekshirilmagan`);
   lines.push("", "Tugmalar avvalgi xabarlarda. Ro'yxat: /admin");
-  for (const admin of adminIds(env)) await sendTo(env, admin, lines.join("\n"), { parse_mode: "HTML" });
+  let sent = 0;
+  for (const admin of adminIds(env)) if ((await tgSend(env, { chat_id: admin, text: lines.join("\n"), parse_mode: "HTML" })).ok) sent++;
+  if (sent) await setSetting(env, "admin_reminded", now());
 }
 
 // 30 kunlik tekshiruv: egasidan «Hali dolzarbmi?» deb so'raladi; ANSWER_DAYS ichida javob bo'lmasa
-// e'lon «Dolzarb emas» deb yopiladi (kanaldagi post ham yangilanadi). Kanaldan import qilingan
-// postlarning egasi botda yo'q (user_id = 0), ular bu tekshiruvga kirmaydi.
+// e'lon «Dolzarb emas» deb yopiladi (kanaldagi post ham yangilanadi). Savol egasiga yetmasa
+// (botni bloklagan) — BLOCKED_DAYS kundan keyin yopiladi. Kanaldan import qilingan postlarning
+// egasi botda yo'q (user_id = 0), ular bu tekshiruvga kirmaydi.
 const stillKb = (l) => ({
   inline_keyboard: [
     [{ text: "👍 Ha, hali dolzarb", callback_data: `u:keep:${l.id}` }],
@@ -1565,33 +1674,49 @@ const stillKb = (l) => ({
     ],
   ],
 });
-async function checkStale(env) {
-  // 1) Javob bermaganlarni yopish
-  const { results: overdue } = await env.DB.prepare(
-    // LIMIT: Cloudflare bitta ishga tushishda tashqi so'rovlar sonini cheklaydi; qolganlari keyingi soatda
-    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NOT NULL AND asked_at<? LIMIT 10"
-  ).bind(S.PUBLISHED, now() - ANSWER_DAYS * DAY).all();
-  for (const r of overdue) {
+async function closeOverdue(env) {
+  // Javob bermaganlar (ANSWER_DAYS) va savol yetmaganlar (BLOCKED_DAYS) yopiladi
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NOT NULL AND " +
+    "((COALESCE(ask_blocked, 0) = 0 AND asked_at < ?) OR (ask_blocked = 1 AND asked_at < ?)) ORDER BY asked_at LIMIT 5"
+  ).bind(S.PUBLISHED, now() - ANSWER_DAYS * DAY, now() - BLOCKED_DAYS * DAY).all();
+  for (const r of results) {
+    if (!canSpend(env, COST.close)) return;
     const l = parseRow(r);
-    if (await closeListing(env, l, "closed")) {
-      await sendTo(env, l.user_id,
-        `⛔️ E'lon #${l.id} (${shortTitle(l)}) ${ANSWER_DAYS} kun javob bo'lmagani uchun «Dolzarb emas» deb yopildi.\n` +
-        "Agar mushuk hali uy izlayotgan bo'lsa, ilova orqali yangi e'lon bering.");
-    }
-  }
-  // 2) Muddati kelganlardan so'rash (check_at bo'sh bo'lsa — eski e'lon, joylangan vaqtdan 30 kun hisoblanadi)
-  const { results: due } = await env.DB.prepare(
-    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NULL " +
-    "AND COALESCE(check_at, published_at + ?) < ? LIMIT 15"
-  ).bind(S.PUBLISHED, CHECK_DAYS * DAY, now()).all();
-  for (const r of due) {
-    const l = parseRow(r);
-    await updateListing(env, l.id, { asked_at: now() });
-    const link = l.channel_username ? `\nhttps://t.me/${l.channel_username}/${l.channel_msg_id}` : "";
+    if (!(await closeListing(env, l, "closed")) || l.ask_blocked) continue; // bloklagan egaga yozib bo'lmaydi
     await sendTo(env, l.user_id,
-      `🐾 E'loningiz #${l.id} (${shortTitle(l)}, ${placeText(l)}) ${CHECK_DAYS} kundan beri kanalda turibdi.${link}\n\n` +
-      `Hali dolzarbmi? ${ANSWER_DAYS} kun ichida javob bo'lmasa, e'lon «Dolzarb emas» deb yopiladi.`,
-      { reply_markup: stillKb(l), disable_web_page_preview: true });
+      `⛔️ E'lon #${l.id} (${shortTitle(l)}) ${ANSWER_DAYS} kun javob bo'lmagani uchun «Dolzarb emas» deb yopildi.\n` +
+      "Agar mushuk hali uy izlayotgan bo'lsa, ilova orqali yangi e'lon bering.");
+  }
+}
+
+async function askStillRelevant(env) {
+  // Muddati kelganlardan so'rash (check_at bo'sh bo'lsa — eski e'lon, joylangan vaqtdan 30 kun hisoblanadi).
+  // Avval kam urinilganlari olinadi — yetib bormayotgan bitta xabar navbatni to'sib qo'ymasin.
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NULL " +
+    "AND COALESCE(check_at, published_at + ?) < ? ORDER BY COALESCE(ask_tries, 0), id LIMIT 8"
+  ).bind(S.PUBLISHED, CHECK_DAYS * DAY, now()).all();
+  for (const r of results) {
+    if (!canSpend(env, COST.ask)) return;
+    const l = parseRow(r);
+    const link = l.channel_username ? `\nhttps://t.me/${l.channel_username}/${l.channel_msg_id}` : "";
+    const res = await tgSend(env, {
+      chat_id: l.user_id, reply_markup: stillKb(l), disable_web_page_preview: true,
+      text: `🐾 E'loningiz #${l.id} (${shortTitle(l)}, ${placeText(l)}) ${CHECK_DAYS} kundan beri kanalda turibdi.${link}\n\n` +
+        `Hali dolzarbmi? ${ANSWER_DAYS} kun ichida javob bo'lmasa, e'lon «Dolzarb emas» deb yopiladi.`,
+    });
+    const tries = (l.ask_tries || 0) + 1;
+    if (res.ok) {
+      // Faqat xabar YETIB BORGANDA «so'raldi» deb belgilanadi — shundan 3 kun hisoblanadi
+      await updateListing(env, l.id, { asked_at: now(), ask_tries: null, ask_blocked: null });
+    } else if (res.blocked || tries >= ASK_MAX_TRIES) {
+      // Egasi botni bloklagan (yoki bir necha bor yetmadi): e'lon BLOCKED_DAYS kundan keyin yopiladi
+      await updateListing(env, l.id, { asked_at: now(), ask_tries: tries, ask_blocked: 1 });
+    } else {
+      // Vaqtincha xato (Telegram band, tarmoq): keyingi ishga tushishda qayta urinamiz
+      await updateListing(env, l.id, { ask_tries: tries });
+    }
   }
 }
 
@@ -1604,16 +1729,21 @@ async function cleanupSettings(env) {
   await env.DB.prepare("DELETE FROM settings WHERE key LIKE 'done:%' AND CAST(value AS INTEGER) < ?").bind(now()).run();
 }
 
-async function hourly(env) {
-  // Har bir vazifa alohida: bittasi xato bersa, qolganlari baribir bajariladi
-  for (const [name, job] of [["to'lov muddati", expirePayments], ["to'lov eslatmasi", remindPayments],
-    ["admin eslatmasi", remindAdmins], ["30 kunlik tekshiruv", checkStale], ["tozalash", cleanupSettings]]) {
+async function scheduledJobs(baseEnv) {
+  // Shu ishga tushish uchun so'rov hisoblagichli env (asl env o'zgarmaydi)
+  const ops = { n: 0 };
+  const env = Object.assign(Object.create(baseEnv), { DB: countingDB(baseEnv.DB, ops), __ops: ops });
+  // Muhimlik tartibida. Har bir vazifa alohida: bittasi xato bersa, qolganlari baribir bajariladi.
+  for (const [name, job] of [["tozalash", cleanupSettings], ["to'lov muddati", expirePayments],
+    ["to'lov eslatmasi", remindPayments], ["admin eslatmasi", remindAdmins],
+    ["muddati o'tganlarni yopish", closeOverdue], ["«Hali dolzarbmi?» savoli", askStillRelevant]]) {
     try {
       await job(env);
     } catch (e) {
       console.log(`Cron (${name}):`, e.stack || e.message);
     }
   }
+  console.log(`Cron: ${ops.n} ta so'rov ishlatildi (chegara ${RUN_BUDGET})`);
 }
 
 // ---------------------------------------------------------------- yo'naltirish
@@ -1683,6 +1813,6 @@ export default {
 
   async scheduled(event, env, ctx) {
     await ensureSchema(env);
-    ctx.waitUntil(hourly(env));
+    ctx.waitUntil(scheduledJobs(env));
   },
 };
