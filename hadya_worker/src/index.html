@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hadyaga mushuklar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Onest:wght@400;500;600;700&display=swap">
+<style>
+/* Uslub: «Yorqin va jasur» — ko'k blok, limon-sariq stikerlar, qalin siyoh hoshiyalar, polaroid kartalar */
+:root{
+  color-scheme: light;
+  --blue:#2D46F0; --blue-dark:#1C30C4; --blue-soft:#DCE1FF;
+  --lemon:#FFD84A; --ink:#12123A; --ink-soft:#4A4A72; --muted:#6A6A8A;
+  --paper:#F4F1EA; --white:#FFFFFF; --line:#E2DED3;
+  --danger:#D63B3B; --danger-soft:#FBE3E1; --ok:#1F8A5B; --ok-soft:#DDF3E8; --warn-soft:#FFF1C2;
+  --display:"Unbounded", "Arial Black", system-ui, sans-serif;
+  --body:"Onest", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --pop:0 4px 0 var(--ink);
+}
+*{box-sizing:border-box}
+html,body{background:var(--paper)}
+body{margin:0;color:var(--ink);font:15px/1.45 var(--body);padding:0 0 calc(96px + env(safe-area-inset-bottom,0px));-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--ink)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-weight:800;font-size:24px;line-height:1.1}
+h2{font-weight:600;font-size:16px;margin-bottom:12px}
+.lead{color:var(--muted);margin:6px 0 16px;font-size:14px}
+.pad{padding:20px 16px 0}
+.eyebrow{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+[hidden]{display:none!important}
+
+/* --- pastki menyu --- */
+nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5}
+nav .in{max-width:520px;margin:0 auto;background:var(--ink);border-radius:22px;padding:6px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;box-shadow:0 10px 24px -10px rgba(18,18,58,.55)}
+nav button{background:none;border:0;border-radius:16px;padding:7px 0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:#C9C9E6;min-width:0}
+nav svg{width:21px;height:21px}
+nav button.on{background:var(--lemon);color:var(--ink)}
+
+/* --- bosh sahifa: ko'k blok --- */
+.hero{position:relative;background:var(--blue);color:var(--white);padding:20px 16px 26px;border-radius:0 0 32px 32px;display:flex;flex-direction:column;gap:14px}
+.hero h1{font-size:31px;line-height:1.04;max-width:240px}
+.sticker{position:absolute;right:14px;top:50px;width:88px;height:88px;border-radius:50%;background:var(--lemon);color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(10deg);box-shadow:var(--pop);text-align:center}
+.sticker b{font-family:var(--display);font-weight:800;font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.sticker span{font-size:11px;font-weight:700;line-height:1.15;margin-top:2px}
+.place{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.place label{position:relative;display:block;background:var(--white);border-radius:14px;min-width:0}
+.place label:first-child{background:var(--lemon)}
+.place select{width:100%;min-width:0;height:50px;border:0;background:transparent;padding:16px 30px 0 12px;font-weight:600;font-size:14px;appearance:none;text-overflow:ellipsis}
+.place small{position:absolute;left:12px;top:7px;font-size:11px;font-weight:600;color:var(--ink-soft)}
+.place label::after{content:"";position:absolute;right:12px;top:50%;width:8px;height:8px;border:solid var(--ink);border-width:0 2px 2px 0;transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.place select:disabled{color:var(--muted)}
+
+/* --- tanlov tugmalari --- */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips input{position:absolute;opacity:0;width:1px;height:1px}
+.chips label{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:12px;border:2px solid var(--ink);font-size:14px;font-weight:700;background:transparent}
+.chips input:checked+label{background:var(--ink);color:var(--white)}
+.chips input:focus-visible+label{outline:3px solid var(--blue);outline-offset:2px}
+.field .chips label{background:var(--white)}
+.chips.kinds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chips.kinds label{justify-content:center;padding:0 4px;font-size:13px}
+.field .chips input:checked+label{background:var(--ink)}
+
+/* --- polaroid kartalar --- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 14px;margin-top:18px}
+.item{background:var(--white);border:0;padding:8px 8px 12px;border-radius:6px;text-align:left;min-width:0;
+  box-shadow:0 2px 0 rgba(18,18,58,.1),0 10px 20px -12px rgba(18,18,58,.4);transform:rotate(var(--r,0deg));transition:transform .15s}
+.item:nth-child(4n+1){--r:-1.2deg}.item:nth-child(4n+2){--r:1deg}.item:nth-child(4n+3){--r:.8deg}.item:nth-child(4n){--r:-.9deg}
+.item:active{transform:rotate(0) scale(.98)}
+.ph{aspect-ratio:1;max-width:100%;background:var(--blue-soft) center/cover no-repeat;position:relative;border-radius:2px}
+.ph.empty-ph{display:grid;place-items:center}
+.ph.empty-ph::before{content:"";width:42%;height:42%;opacity:.35;background:var(--blue);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='15.5' rx='4.6' ry='3.8'/%3E%3Ccircle cx='6' cy='10' r='2.1'/%3E%3Ccircle cx='18' cy='10' r='2.1'/%3E%3Ccircle cx='9.2' cy='6' r='2'/%3E%3Ccircle cx='14.8' cy='6' r='2'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='15.5' rx='4.6' ry='3.8'/%3E%3Ccircle cx='6' cy='10' r='2.1'/%3E%3Ccircle cx='18' cy='10' r='2.1'/%3E%3Ccircle cx='9.2' cy='6' r='2'/%3E%3Ccircle cx='14.8' cy='6' r='2'/%3E%3C/svg%3E") center/contain no-repeat}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;line-height:1.3}
+.item .badge{position:absolute;left:6px;bottom:6px}
+.b-hadya{background:var(--lemon);color:var(--ink)}.b-sotuv{background:var(--ink);color:var(--white)}.b-reklama{background:var(--blue);color:var(--white)}
+.item .meta{padding:8px 2px 0}
+.item .t,.item .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t{font-size:14px;font-weight:700}.item .s{font-size:12px;color:var(--muted)}
+.item .p{font-family:var(--display);font-weight:600;font-size:12.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);text-align:center;padding:40px 10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;padding:12px;border:2px solid var(--ink);border-radius:16px;
+  background:var(--lemon);color:var(--ink);font-family:var(--display);font-weight:800;font-size:14px;text-decoration:none;box-shadow:var(--pop);margin-bottom:12px}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.ghost{background:var(--white);font-family:var(--body);font-weight:700;font-size:15px}
+.btn svg{width:20px;height:20px;flex:0 0 auto}
+.more{margin:22px auto 0;width:auto;padding:0 22px;display:flex}
+
+/* --- e'lon sahifasi --- */
+#v-detail{background:var(--blue);min-height:100vh}
+.dtop{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0;color:var(--white)}
+.round{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:transparent;display:grid;place-items:center;color:var(--white)}
+.round svg{width:22px;height:22px}
+.gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding:20px 40px 34px;scrollbar-width:none}
+.gallery::-webkit-scrollbar{display:none}
+.pola{position:relative;flex:0 0 100%;scroll-snap-align:center;background:var(--white);padding:10px 10px 38px;border-radius:6px;
+  box-shadow:0 18px 30px -14px rgba(0,0,0,.5);transform:rotate(-2deg)}
+.pola:nth-child(even){transform:rotate(1.5deg)}
+.pola img,.pola video,.pola .ph{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:var(--blue-soft);border-radius:2px}
+.pola .cap{position:absolute;left:10px;right:10px;bottom:10px;text-align:center;font-family:var(--display);font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pricetag{position:absolute;right:-12px;top:-14px;min-width:74px;height:74px;padding:0 8px;border-radius:37px;background:var(--lemon);color:var(--ink);
+  display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:800;font-size:13px;line-height:1.1;transform:rotate(12deg);box-shadow:var(--pop);z-index:1}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:-18px;margin-bottom:16px}
+.dots i{width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.45)}.dots i.on{width:20px;background:var(--lemon)}
+.sheet{background:var(--paper);border-radius:30px 30px 0 0;padding:24px 16px 8px;min-height:50vh}
+.sheet h1{font-size:23px}
+.where{display:flex;align-items:center;gap:6px;margin:8px 0 18px;font-size:14px;font-weight:600;color:var(--ink-soft)}
+.where svg{width:16px;height:16px;color:var(--blue);flex:0 0 auto}
+.cells{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.cell{border:2px solid var(--ink);border-radius:14px;padding:9px 12px;min-width:0;background:var(--white)}
+.cell.wide{grid-column:1 / -1}
+.cell small{display:block;font-size:12px;color:var(--muted)}
+.cell b{display:block;font-size:15px;overflow-wrap:anywhere}
+.posttext{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;background:var(--white);border:2px solid var(--ink);border-radius:16px;padding:14px;margin-bottom:16px}
+.warn{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);border:2px solid var(--ink);border-radius:14px;padding:11px 12px;font-size:14px;font-weight:600;margin-bottom:16px}
+.warn svg{width:20px;height:20px;flex:0 0 auto}
+.note-box{background:var(--white);border:2px dashed var(--ink);border-radius:16px;padding:14px;text-align:center;font-weight:700;margin-bottom:12px}
+.ctas{display:flex;gap:10px}
+.ctas .btn{flex:1}
+.ctas .call{flex:0 0 58px;width:58px;background:var(--white)}
+
+/* --- e'lon berish --- */
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--blue);padding:0;margin-bottom:12px;font-weight:700;font-size:15px}
+.types{display:grid;gap:12px}
+.type{display:flex;gap:14px;align-items:center;background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:14px;text-align:left;box-shadow:var(--pop)}
+.type:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.type .dot{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;border:2px solid var(--ink)}
+.type .dot svg{width:24px;height:24px}
+.type b{display:block;font-size:16px}.type small{color:var(--muted);font-size:13px}
+.type .pr{margin-left:auto;font-family:var(--display);font-size:12px;font-weight:600;white-space:nowrap}
+.slots{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:12px;align-items:end;margin:8px 0}
+.slot{position:relative;background:var(--white);padding:6px 6px 22px;border-radius:4px;border:0;
+  box-shadow:0 2px 0 rgba(18,18,58,.12),0 8px 16px -8px rgba(18,18,58,.4);transform:rotate(var(--r));transition:transform .2s}
+.slot:nth-child(1){--r:-2.5deg}.slot:nth-child(2){--r:1.5deg}.slot:nth-child(3){--r:-1deg}
+.slot:active{transform:rotate(0) scale(.97)}
+.slot .pic{aspect-ratio:1;background:var(--blue-soft) center/cover no-repeat;display:grid;place-items:center;color:var(--blue);overflow:hidden}
+.slot .pic svg{width:30%;height:30%}
+.slot .pic video{width:100%;height:100%;object-fit:cover}
+.slot .cap{position:absolute;left:0;right:0;bottom:3px;font-size:11px;font-weight:600;color:var(--muted);text-align:center}
+.slot .rm{position:absolute;top:-9px;right:-9px;width:28px;height:28px;border-radius:50%;background:var(--danger);color:#fff;
+  border:2px solid var(--ink);font-size:16px;line-height:1;display:none}
+.slot.filled .rm{display:block}.slot.filled .pic svg{display:none}
+.hint{font-size:13px;color:var(--muted);margin:12px 0 18px}
+.group{background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:2px 14px;margin-bottom:14px}
+.field{padding:12px 0;border-bottom:1.5px solid var(--line)}.field:last-child{border:0}
+.lbl{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+.field input:not([type=radio]):not([type=checkbox]),.field textarea,.field select{width:100%;border:0;background:transparent;padding:2px 0;outline:none;font-size:16px}
+.field input::placeholder,.field textarea::placeholder{color:#A3A3BC}
+.field select{appearance:none}
+.field textarea{resize:none;min-height:76px}
+.err{color:var(--danger);font-size:13px;font-weight:600;margin-top:6px;display:none}.bad .err{display:block}
+.count{font-size:12px;color:var(--muted);text-align:right}
+#fallbackSubmit{margin-top:6px}
+
+/* --- mening e'lonlarim --- */
+.mine{display:flex;gap:12px;background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:10px;margin-bottom:12px}
+.mine .ph{width:76px;height:76px;border-radius:10px;flex:0 0 auto;aspect-ratio:auto}
+.mine .body{flex:1;min-width:0}
+.mine .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:8px;background:var(--line);margin:5px 0}
+.st.published{background:var(--ok-soft);color:var(--ok)}
+.st.given,.st.sold{background:var(--lemon)}
+.st.rejected,.st.expired{background:var(--danger-soft);color:var(--danger)}
+.st.awaiting_payment,.st.payment_review{background:var(--blue-soft);color:var(--blue-dark)}
+.sub{font-size:13px;color:var(--muted)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.acts button{min-height:38px;font-size:13px;font-weight:700;padding:0 12px;border-radius:10px;border:2px solid var(--ink);background:var(--white)}
+.acts button:first-child{background:var(--lemon)}
+
+/* --- statistika --- */
+.bigstat{position:relative;background:var(--blue);color:var(--white);border-radius:24px;padding:22px 18px 24px;margin-bottom:14px;overflow:hidden}
+.bigstat .ring{width:140px;height:140px;border-radius:50%;background:var(--lemon);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:4px auto 14px;transform:rotate(-6deg);box-shadow:var(--pop)}
+.bigstat .ring b{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.bigstat .ring span{font-size:12px;font-weight:700}
+.bigstat p{margin:0;text-align:center;font-weight:600;font-size:15px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi{background:var(--white);border:2px solid var(--ink);border-radius:16px;padding:12px 14px}
+.kpi .n{font-family:var(--display);font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;color:var(--muted)}
+.kpi.alert{background:var(--lemon)}.kpi.alert .l{color:var(--ink)}
+.box{background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:16px;margin-bottom:14px}
+.bar{margin:12px 0}.bar .row{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:5px}
+.track{height:12px;background:var(--blue-soft);border-radius:6px;overflow:hidden}.fill{height:100%;background:var(--blue);border-radius:6px}
+
+/* --- savol (AI) --- */
+.chat{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.bubble{max-width:88%;padding:11px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.bubble.me{align-self:flex-end;background:var(--blue);color:var(--white);border-bottom-right-radius:6px}
+.bubble.ai{align-self:flex-start;background:var(--white);border:2px solid var(--ink);border-bottom-left-radius:6px}
+.bubble.wait{color:var(--muted);border-style:dashed}
+.suggest{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.suggest button{text-align:left;background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:11px 14px;font-size:14px;font-weight:600}
+.askbox{display:flex;gap:8px;align-items:flex-end;background:var(--white);border:2px solid var(--ink);border-radius:20px;padding:7px 7px 7px 14px}
+.askbox textarea{flex:1;min-width:0;border:0;background:transparent;outline:none;resize:none;min-height:26px;max-height:120px;padding:8px 0;font-size:16px}
+.askbox button{flex:0 0 auto;width:44px;height:44px;border-radius:14px;border:2px solid var(--ink);background:var(--lemon);display:grid;place-items:center}
+.askbox button:disabled{opacity:.5}
+.askbox svg{width:20px;height:20px}
+.bubble a{color:var(--blue);font-weight:700;text-decoration:underline}
+.adminbtn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 3px 0 var(--ink)}
+.adminbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.adminbtn svg{width:18px;height:18px}
+.helpline{display:flex;justify-content:center;margin:18px 0 4px}
+.ai-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:8px}
+
+/* --- admin --- */
+.queue .q{display:flex;gap:10px;align-items:center;border-bottom:1.5px solid var(--line);padding:10px 0}
+.queue .q:last-child{border:0}
+.queue .q .ph{width:50px;height:50px;border-radius:8px;flex:0 0 auto;aspect-ratio:auto}
+.queue .q .body{flex:1;min-width:0}
+.queue .q .t{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmds{font-size:14px;line-height:1.75}.cmds code{background:var(--paper);border:1.5px solid var(--line);padding:1px 6px;border-radius:6px;font-weight:600}
+#outside{background:var(--lemon);border:2px solid var(--ink);padding:12px;border-radius:14px;margin:12px 16px 0;font-size:14px;font-weight:600}
+@media (prefers-reduced-motion:reduce){.slot,.item{transition:none}}
+</style>
+</head>
+<body>
+<div id="outside" hidden>Ilova Telegram ichida to'liq ishlaydi. Botga kirib «Ilova» tugmasini bosing.</div>
+
+<section class="view" id="v-search">
+  <div class="hero">
+    <span class="eyebrow">Hadyaga mushuklar</span>
+    <h1>Har bir mushukka uy kerak</h1>
+    <div class="sticker" id="heroSticker" hidden><b id="heroCount">0</b><span>uy<br>topdi</span></div>
+    <div class="place">
+      <label><small>Hudud</small><select id="fRegion" aria-label="Hudud"><option value="">Barcha hududlar</option></select></label>
+      <label><small>Tuman</small><select id="fDistrict" aria-label="Tuman" disabled><option value="">Barcha tumanlar</option></select></label>
+    </div>
+  </div>
+  <div class="pad">
+    <div class="chips kinds">
+      <input type="radio" name="fk" id="fk-all" value="" checked><label for="fk-all">Hammasi</label>
+      <input type="radio" name="fk" id="fk-h" value="hadya"><label for="fk-h">Hadya</label>
+      <input type="radio" name="fk" id="fk-s" value="sotuv"><label for="fk-s">Sotuv</label>
+      <input type="radio" name="fk" id="fk-r" value="reklama"><label for="fk-r">Reklama</label>
+    </div>
+    <div class="grid" id="results"></div>
+    <div class="empty" id="noResults" hidden>Bu yerda hozircha e'lon yo'q</div>
+    <button class="btn ghost more" id="loadMore" hidden>Yana ko'rsatish</button>
+  </div>
+</section>
+
+<section class="view" id="v-detail" hidden><div id="detail"></div></section>
+
+<section class="view pad" id="v-new" hidden>
+  <div id="stepType">
+    <h1>E'lon berish</h1>
+    <p class="lead">E'lon admin tekshiruvidan so'ng kanalga chiqadi</p>
+    <div class="types">
+      <button class="type" data-kind="hadya"><span class="dot" style="background:var(--lemon)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg></span>
+        <span><b>Hadyaga mushuk</b><small>Yangi uy izlayotgan mushuk</small></span><span class="pr">BEPUL</span></button>
+      <button class="type" data-kind="sotuv"><span class="dot" style="background:var(--ink);color:var(--white)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg></span>
+        <span><b>Mushuk sotish</b><small>Zotli yoki oddiy mushuk</small></span><span class="pr js-price"></span></button>
+      <button class="type" data-kind="reklama"><span class="dot" style="background:var(--blue);color:var(--white)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1zM17 8a5 5 0 0 1 0 8"/></svg></span>
+        <span><b>Reklama</b><small>Klinika, do'kon, xizmat, mahsulot</small></span><span class="pr js-price"></span></button>
+    </div>
+  </div>
+
+  <div id="stepForm" hidden>
+    <button class="back" id="backToType"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>E'lon turi</button>
+    <h1 id="formTitle"></h1>
+    <p class="lead" id="formLead"></p>
+    <div class="slots">
+      <button type="button" class="slot" data-i="0"><div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="cap">Asosiy</div><span class="rm" aria-label="O'chirish">×</span></button>
+      <button type="button" class="slot" data-i="1"><div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></div><div class="cap">Rasm/video</div><span class="rm" aria-label="O'chirish">×</span></button>
+      <button type="button" class="slot" data-i="2"><div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></div><div class="cap">Rasm/video</div><span class="rm" aria-label="O'chirish">×</span></button>
+    </div>
+    <input type="file" id="file" accept="image/*,video/*" hidden>
+    <div id="f-media"><div class="err">Kamida bitta rasm yoki video qo'shing.</div></div>
+    <p class="hint">3 tagacha rasm yoki video (video 20 MB gacha).</p>
+
+    <div class="group k-cat">
+      <div class="field"><label class="lbl" for="breed">Zoti</label><input id="breed" maxlength="40" placeholder="Masalan, britan, oddiy"></div>
+      <div class="field" id="f-age"><label class="lbl" for="age">Yoshi</label><input id="age" maxlength="30" placeholder="Masalan, 3 oylik"><div class="err">Yoshini yozing.</div></div>
+      <div class="field" id="f-gender"><span class="lbl">Jinsi</span><div class="chips">
+        <input type="radio" name="gender" id="g-f" value="f"><label for="g-f">Urg'ochi</label>
+        <input type="radio" name="gender" id="g-m" value="m"><label for="g-m">Erkak</label>
+        <input type="radio" name="gender" id="g-u" value="u"><label for="g-u">Bilmayman</label></div><div class="err">Jinsini tanlang.</div></div>
+      <div class="field"><span class="lbl">Sog'lig'i</span><div class="chips">
+        <input type="checkbox" name="health" id="h-1" value="soglom"><label for="h-1">Sog'lom</label>
+        <input type="checkbox" name="health" id="h-2" value="emlangan"><label for="h-2">Emlangan</label>
+        <input type="checkbox" name="health" id="h-3" value="steril"><label for="h-3">Sterilizatsiya qilingan</label></div>
+        <input id="health_note" maxlength="80" placeholder="Qo'shimcha (ixtiyoriy)" style="margin-top:10px"></div>
+      <div class="field" id="f-delivery"><span class="lbl">Dostafka</span><div class="chips">
+        <input type="radio" name="delivery" id="d-1" value="bor"><label for="d-1">Bor</label>
+        <input type="radio" name="delivery" id="d-2" value="yoq"><label for="d-2">Yo'q</label>
+        <input type="radio" name="delivery" id="d-3" value="kelish"><label for="d-3">Kelishiladi</label></div><div class="err">Tanlang.</div></div>
+      <div class="field k-sotuv" id="f-price"><label class="lbl" for="price">Narxi (so'm)</label><input id="price" inputmode="numeric" maxlength="15" placeholder="Masalan, 500000"><div class="err">Narxni yozing.</div></div>
+    </div>
+
+    <div class="group k-reklama">
+      <div class="field" id="f-title"><label class="lbl" for="title">Nomi</label><input id="title" maxlength="60" placeholder="Masalan, «Mushukjon» veterinar klinikasi"><div class="err">Nomini yozing.</div></div>
+      <div class="field" id="f-about"><label class="lbl" for="about">Tavsif</label><textarea id="about" maxlength="300" placeholder="Nima taklif qilasiz?"></textarea><div class="err">Tavsif yozing.</div></div>
+      <div class="field"><label class="lbl" for="rprice">Narxi (ixtiyoriy)</label><input id="rprice" maxlength="40" placeholder="Masalan, 50 000 so'mdan"></div>
+    </div>
+
+    <div class="group">
+      <div class="field" id="f-region"><label class="lbl" for="region">Hudud</label><select id="region"><option value="">Tanlang…</option></select><div class="err">Hududni tanlang.</div></div>
+      <div class="field" id="f-district"><label class="lbl" for="district">Tuman / shahar</label><select id="district" disabled><option value="">Avval hududni tanlang</option></select><div class="err">Tanlang.</div></div>
+      <div class="field" id="f-phone"><label class="lbl" for="phone">Telefon</label><input id="phone" type="tel" inputmode="tel" value="+998 " maxlength="20"><div class="err">+998 XX XXX XX XX ko'rinishida yozing.</div></div>
+      <div class="field"><label class="lbl" for="extra">Qo'shimcha ma'lumot</label><textarea id="extra" maxlength="400" placeholder="Xarakteri, sharti va boshqalar"></textarea><div class="count"><span id="cnt">0</span>/<span id="cntMax">400</span></div></div>
+    </div>
+    <button class="btn" id="fallbackSubmit" hidden>E'lonni yuborish</button>
+  </div>
+</section>
+
+<section class="view pad" id="v-my" hidden>
+  <h1>Mening e'lonlarim</h1>
+  <p class="lead">Mushuk egasini topganda shu yerda belgilang</p>
+  <div id="myList"></div>
+  <div class="helpline js-admin" hidden><button class="adminbtn" data-admin><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l4-4"/></svg>E'lon bo'yicha savol? Adminga yozing</button></div>
+</section>
+
+<section class="view pad" id="v-stats" hidden>
+  <h1>Statistika</h1>
+  <p class="lead">Kanalimiz orqali yangi uy topgan mushuklar</p>
+  <div id="statsBox"></div>
+</section>
+
+<section class="view pad" id="v-ask" hidden>
+  <h1>Mushuk haqida savol</h1>
+  <p class="lead">Parvarish, ovqat, sog'liq va xulq haqida so'rang</p>
+  <div class="chat" id="chat"></div>
+  <div class="suggest" id="suggest">
+    <button>2 oylik mushukchani nima bilan boqish kerak?</button>
+    <button>Mushukni lotokka qanday o'rgataman?</button>
+    <button>Mushukni qachon emlash kerak?</button>
+  </div>
+  <form class="askbox" id="askForm">
+    <textarea id="q" rows="1" maxlength="500" placeholder="Savolingizni yozing…" aria-label="Savol"></textarea>
+    <button id="askBtn" aria-label="Yuborish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </form>
+  <div class="ai-meta"><span id="aiLeft"></span><span>Jiddiy holatda veterinarga murojaat qiling</span></div>
+  <div class="err" id="askErr" style="display:block"></div>
+  <div class="helpline js-admin" hidden><button class="adminbtn" data-admin><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l4-4"/></svg>Adminga yozish</button></div>
+</section>
+
+<section class="view pad" id="v-admin" hidden>
+  <h1>Admin panel</h1>
+  <p class="lead">Faqat adminlarga ko'rinadi</p>
+  <div id="adminBox"><div class="empty">Yuklanmoqda…</div></div>
+  <div class="group" style="padding:14px">
+    <h2>To'lov sozlamalari</h2>
+    <div class="field" style="padding-top:0"><label class="lbl" for="sPrice">Pullik e'lon narxi (so'm)</label><input id="sPrice" inputmode="numeric" maxlength="9"></div>
+    <div class="field"><label class="lbl" for="sCard">Karta raqami</label><input id="sCard" inputmode="numeric" maxlength="23" placeholder="8600 0000 0000 0000"></div>
+    <div class="field"><label class="lbl" for="sOwner">Karta egasi</label><input id="sOwner" maxlength="60" placeholder="Ism Familiya"></div>
+    <button class="btn" id="saveSettings" style="margin-top:12px">Saqlash</button>
+  </div>
+  <div class="box cmds">
+    <h2>Bot buyruqlari</h2>
+    <div><code>/berilgan</code> — eski berilgan postlarni statistikaga kiritish rejimi</div>
+    <div><code>/oddiy</code> — rejimni o'chirish</div>
+    <div>Kanaldagi postni ilovaga qo'shish uchun uni botga forward qiling.</div>
+    <div>E'lon va cheklarni bot chatidagi tugmalar orqali tasdiqlaysiz.</div>
+  </div>
+</section>
+
+<nav><div class="in">
+  <button data-view="search" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Qidirish</button>
+  <button data-view="new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg>E'lon</button>
+  <button data-view="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>Savol</button>
+  <button data-view="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Mening</button>
+  <button data-view="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistika</button>
+  <button data-view="admin" id="navAdmin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>Admin</button>
+</div></nav>
+
+<script>
+const tg = window.Telegram?.WebApp, inTg = !!(tg && tg.initData);
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const KIND = {hadya:"Hadya", sotuv:"Sotuv", reklama:"Reklama"};
+const TAG = {hadya:"#hadyaga", sotuv:"#sotiladi", reklama:"#reklama"};
+const ICON = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l4-4"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  ext: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg>',
+};
+let REGIONS = [], CONFIG = {price_text:"7 000 so'm"}, current = "search";
+
+async function api(path, opts = {}) {
+  opts.headers = {...(opts.headers || {}), "X-Init-Data": tg?.initData || ""};
+  try {
+    const r = await fetch(path, opts);
+    const j = await r.json().catch(() => ({ok:false, error:"Server javob bermadi."}));
+    if (!r.ok && !j.error) j.error = "Xatolik yuz berdi.";
+    return j;
+  } catch { return {ok:false, error:"Internet aloqasini tekshiring."}; }
+}
+const say = (m, cb) => tg?.showAlert ? tg.showAlert(m, cb) : (alert(m), cb && cb());
+const ask = m => new Promise(res => tg?.showConfirm ? tg.showConfirm(m, res) : res(confirm(m)));
+const haptic = t => tg?.HapticFeedback?.notificationOccurred(t);
+const openTg = url => tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url);
+const thumb = (url, cls = "ph") => url ? `<div class="${cls}" style="background-image:url('${url}')">` : `<div class="${cls} empty-ph">`;
+function headerColor(c) { try { tg?.setHeaderColor(c); } catch {} }
+
+function fillRegions(sel, first) { sel.innerHTML = `<option value="">${first}</option>` + REGIONS.map(r => `<option>${esc(r.name)}</option>`).join(""); }
+function fillDistricts(sel, region, first) {
+  const r = REGIONS.find(x => x.name === region);
+  sel.innerHTML = `<option value="">${first}</option>` + (r ? r.d.map(d => `<option>${esc(d[0])}</option>`).join("") : "");
+  sel.disabled = !r;
+}
+
+/* ---------- navigatsiya ---------- */
+function show(view) {
+  current = view;
+  $$(".view").forEach(v => v.hidden = v.id !== "v-" + view);
+  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === view || (view === "detail" && b.dataset.view === "search")));
+  window.scrollTo(0, 0);
+  headerColor(view === "search" || view === "detail" ? "#2D46F0" : "#F4F1EA");
+  updateMainButton();
+  if (view === "detail") tg?.BackButton.show(); else tg?.BackButton.hide();
+  if (view === "my") loadMy();
+  if (view === "stats") loadStats();
+  if (view === "admin") loadAdmin();
+  if (view === "ask") refreshAiLeft();
+}
+$$("nav button").forEach(b => b.onclick = () => show(b.dataset.view));
+tg?.BackButton.onClick(() => show("search"));
+
+/* ---------- qidiruv ---------- */
+let offset = 0;
+async function search(reset = true) {
+  if (reset) { offset = 0; $("#results").innerHTML = ""; }
+  const q = new URLSearchParams({kind: $('input[name="fk"]:checked').value, region: $("#fRegion").value, district: $("#fDistrict").value, offset});
+  const j = await api("api/listings?" + q);
+  (j.items || []).forEach(it => {
+    const b = document.createElement("button");
+    b.className = "item";
+    b.innerHTML = `${thumb(it.thumb)}<span class="badge b-${it.kind}">${KIND[it.kind]}</span></div>
+      <div class="meta"><div class="t">${esc(it.title)}</div><div class="s">${esc(it.district || it.region || "")}</div><div class="p">${esc(it.kind === "hadya" ? "BEPUL" : it.price)}</div></div>`;
+    b.onclick = () => openDetail(it.id);
+    $("#results").append(b);
+  });
+  offset += (j.items || []).length;
+  $("#loadMore").hidden = !j.more;
+  $("#noResults").hidden = offset > 0;
+  if (j.error) { $("#noResults").textContent = j.error; $("#noResults").hidden = false; }
+}
+$$('input[name="fk"]').forEach(i => i.onchange = () => search());
+$("#fRegion").onchange = () => { fillDistricts($("#fDistrict"), $("#fRegion").value, "Barcha tumanlar"); search(); };
+$("#fDistrict").onchange = () => search();
+$("#loadMore").onclick = () => search(false);
+
+async function openDetail(id) {
+  const j = await api("api/listings/" + id);
+  if (j.error) return say(j.error);
+  const tag = j.kind === "hadya" ? "BEPUL" : esc(j.price);
+  const media = j.media.length ? j.media : [null];
+  const gal = media.map((m, i) => `<div class="pola">${i === 0 ? `<span class="pricetag">${tag}</span>` : ""}
+    ${!m ? `<div class="ph empty-ph"></div>` : m.type === "video" ? `<video src="${m.url}" controls playsinline preload="metadata"></video>` : `<img src="${m.url}" alt="">`}
+    <span class="cap">${esc(j.title)}</span></div>`).join("");
+  const dots = media.length > 1 ? `<div class="dots">${media.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : "";
+  const rowsNoPlace = j.rows.filter(([k]) => k !== "Manzil" && k !== "Narxi");
+  const short = rowsNoPlace.filter(([, v]) => String(v).length <= 22), long = rowsNoPlace.filter(([, v]) => String(v).length > 22);
+  const cell = ([k, v], wide) => `<div class="cell${wide ? " wide" : ""}"><small>${esc(k)}</small><b>${esc(v)}</b></div>`;
+  const cells = short.map((r, i) => cell(r, short.length % 2 === 1 && i === short.length - 1)).join("") + long.map(r => cell(r, true)).join("");
+  const place = (j.rows.find(([k]) => k === "Manzil") || [, j.district || j.region || ""])[1];
+  let actions = "";
+  if (j.contact) {
+    const call = j.contact.phone ? `<a class="btn call" href="tel:${j.contact.phone.replace(/\s/g, "")}" aria-label="Qo'ng'iroq: ${esc(j.contact.phone)}">${ICON.phone}</a>` : "";
+    const write = j.contact.username ? `<button class="btn" id="dWrite">${ICON.send}Egasiga yozish</button>`
+      : j.contact.phone ? `<a class="btn" href="tel:${j.contact.phone.replace(/\s/g, "")}">${ICON.phone}${esc(j.contact.phone)}</a>` : "";
+    actions += `<div class="ctas">${j.contact.username ? call : ""}${write}</div>`;
+    if (j.contact.phone && j.contact.username) actions += `<p class="sub" style="text-align:center;margin:0 0 12px">Telefon: ${esc(j.contact.phone)}</p>`;
+  } else {
+    actions += `<div class="note-box">${j.status === "given" ? "Bu mushuk yangi uyini topdi" : j.status === "sold" ? "Sotilgan" : "E'lon dolzarb emas"}</div>`;
+  }
+  if (j.post) actions += `<button class="btn ghost" id="dPost">${ICON.ext}Kanalda ko'rish</button>`;
+  $("#detail").innerHTML = `
+    <div class="dtop"><button class="round" id="dBack" aria-label="Orqaga">${ICON.back}</button><span class="eyebrow">${TAG[j.kind]}</span><span style="width:44px"></span></div>
+    <div class="gallery" id="gal">${gal}</div>${dots}
+    <div class="sheet">
+      <h1>${esc(j.title)}</h1>
+      <div class="where">${ICON.pin}${esc(place)}</div>
+      ${j.kind === "sotuv" && j.contact ? `<div class="warn">${ICON.warn}<span>Oldindan pul o'tkazmang. Mushukni ko'rib, keyin to'lang.</span></div>` : ""}
+      ${cells ? `<div class="cells">${cells}</div>` : ""}
+      ${j.text ? `<div class="posttext">${esc(j.text)}</div>` : ""}
+      ${actions}
+    </div>`;
+  $("#dBack").onclick = () => show("search");
+  if ($("#dWrite")) $("#dWrite").onclick = () => openTg("https://t.me/" + j.contact.username);
+  if ($("#dPost")) $("#dPost").onclick = () => openTg(j.post);
+  const g = $("#gal");
+  if (media.length > 1) g.onscroll = () => {
+    const i = Math.round(g.scrollLeft / g.clientWidth);
+    $$(".dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+  };
+  show("detail");
+}
+
+/* ---------- e'lon berish ---------- */
+let kind = null, slotIdx = 0, sending = false;
+const media = [null, null, null];
+
+$$(".type").forEach(b => b.onclick = () => {
+  kind = b.dataset.kind;
+  $("#formTitle").textContent = {hadya:"Hadyaga mushuk", sotuv:"Mushuk sotish", reklama:"Reklama"}[kind];
+  $("#formLead").textContent = kind === "hadya" ? "Bepul. Admin tekshirgach kanalga chiqadi" : `Admin ma'qullagach ${CONFIG.price_text} to'lov qilasiz`;
+  $$(".k-cat").forEach(e => e.hidden = kind === "reklama");
+  $$(".k-sotuv").forEach(e => e.hidden = kind !== "sotuv");
+  $$(".k-reklama").forEach(e => e.hidden = kind !== "reklama");
+  const max = kind === "reklama" ? 300 : 400;
+  $("#extra").maxLength = max; $("#cntMax").textContent = max;
+  $("#stepType").hidden = true; $("#stepForm").hidden = false;
+  window.scrollTo(0, 0); updateMainButton();
+});
+$("#backToType").onclick = () => { $("#stepForm").hidden = true; $("#stepType").hidden = false; kind = null; updateMainButton(); };
+
+$$(".slot").forEach(s => s.onclick = e => {
+  const i = +s.dataset.i;
+  if (e.target.classList.contains("rm")) return setMedia(i, null);
+  slotIdx = media[i] ? i : Math.max(0, media.findIndex(m => !m));
+  $("#file").value = ""; $("#file").click();
+});
+$("#file").onchange = async () => {
+  const f = $("#file").files[0]; if (!f) return;
+  try {
+    if (f.type.startsWith("video/")) {
+      if (f.size > 20 * 1024 * 1024) return say("Video 20 MB dan oshmasin. Qisqaroq video tanlang.");
+      setMedia(slotIdx, {blob: f, video: true});
+    } else setMedia(slotIdx, {blob: await compress(f), video: false});
+  } catch { say("Bu faylni ochib bo'lmadi. Boshqasini tanlang."); }
+};
+function setMedia(i, m) {
+  media[i] = m;
+  const s = $(`.slot[data-i="${i}"]`), pic = s.querySelector(".pic");
+  pic.querySelector("video")?.remove(); pic.style.backgroundImage = "";
+  if (m) {
+    const url = URL.createObjectURL(m.blob);
+    if (m.video) pic.insertAdjacentHTML("beforeend", `<video src="${url}" muted playsinline></video>`);
+    else pic.style.backgroundImage = `url(${url})`;
+  }
+  s.classList.toggle("filled", !!m);
+  $("#f-media").classList.remove("bad");
+}
+// Rasmni 1600px gacha kichraytirib JPEG qiladi (iPhone HEIC ham shu yerda JPEG'ga aylanadi)
+async function compress(file) {
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(url);
+  return new Promise(res => c.toBlob(res, "image/jpeg", 0.85));
+}
+$("#region").onchange = () => { fillDistricts($("#district"), $("#region").value, "Tanlang…"); $("#f-region").classList.remove("bad"); };
+$("#extra").oninput = () => $("#cnt").textContent = $("#extra").value.length;
+$$("#stepForm input, #stepForm select, #stepForm textarea").forEach(el =>
+  el.addEventListener("input", () => el.closest(".field")?.classList.remove("bad")));
+
+const val = n => $(`input[name="${n}"]:checked`)?.value || "";
+function validate() {
+  $$("#stepForm .bad, #f-media.bad").forEach(e => e.classList.remove("bad"));
+  const bad = [], need = (ok, id) => { if (!ok) bad.push(id); };
+  need(media.some(Boolean), "f-media");
+  if (kind === "reklama") { need($("#title").value.trim(), "f-title"); need($("#about").value.trim(), "f-about"); }
+  else {
+    need($("#age").value.trim(), "f-age"); need(val("gender"), "f-gender"); need(val("delivery"), "f-delivery");
+    if (kind === "sotuv") need(+$("#price").value.replace(/\D/g, "") >= 1000, "f-price");
+  }
+  need($("#region").value, "f-region"); need($("#district").value, "f-district");
+  need(/^998\d{9}$/.test($("#phone").value.replace(/\D/g, "")), "f-phone");
+  bad.forEach(id => $("#" + id).classList.add("bad"));
+  if (bad.length) { $("#" + bad[0]).scrollIntoView({behavior:"smooth", block:"center"}); haptic("error"); }
+  return !bad.length;
+}
+
+async function submit() {
+  if (sending || !validate()) return;
+  sending = true; tg?.MainButton.showProgress(); $("#fallbackSubmit").disabled = true;
+  const fd = new FormData();
+  fd.append("initData", tg?.initData || ""); fd.append("kind", kind);
+  ["breed", "age", "health_note", "title", "about", "region", "district", "phone", "extra"].forEach(id => fd.append(id, $("#" + id).value));
+  fd.append("price", kind === "reklama" ? $("#rprice").value : $("#price").value);
+  fd.append("gender", val("gender")); fd.append("delivery", val("delivery"));
+  fd.append("health", $$('input[name="health"]:checked').map(i => i.value).join(","));
+  media.filter(Boolean).forEach((m, i) => fd.append("media", m.blob, m.video ? `v${i}.mp4` : `p${i}.jpg`));
+  const j = await api("api/submit", {method: "POST", body: fd});
+  sending = false; tg?.MainButton.hideProgress(); $("#fallbackSubmit").disabled = false;
+  if (j.ok) {
+    haptic("success");
+    say("E'lon adminga yuborildi! Natija haqida bot xabar beradi.", () => { resetForm(); show("my"); });
+  } else say(j.error || "Xatolik. Qayta urinib ko'ring.");
+}
+function resetForm() {
+  [0, 1, 2].forEach(i => setMedia(i, null));
+  $$("#stepForm input:not([type=radio]):not([type=checkbox]), #stepForm textarea").forEach(e => e.value = "");
+  $$("#stepForm input[type=radio], #stepForm input[type=checkbox]").forEach(e => e.checked = false);
+  $("#phone").value = "+998 "; $("#cnt").textContent = "0";
+  $("#region").value = ""; fillDistricts($("#district"), "", "Avval hududni tanlang");
+  $("#stepForm").hidden = true; $("#stepType").hidden = false; kind = null;
+}
+
+function updateMainButton() {
+  const on = current === "new" && !!kind;
+  if (inTg) { if (on) { tg.MainButton.setText("E'lonni yuborish"); tg.MainButton.show(); } else tg.MainButton.hide(); }
+  else $("#fallbackSubmit").hidden = !on;
+}
+if (inTg) tg.MainButton.onClick(submit); else $("#fallbackSubmit").onclick = submit;
+
+/* ---------- mening e'lonlarim ---------- */
+async function loadMy() {
+  const box = $("#myList");
+  if (!inTg) return box.innerHTML = `<div class="empty">Ilovani bot orqali oching.</div>`;
+  const j = await api("api/my");
+  if (j.error) return box.innerHTML = `<div class="empty">${esc(j.error)}</div>`;
+  if (!j.items.length) return box.innerHTML = `<div class="empty">Hali e'lon bermagansiz. «E'lon» bo'limidan boshlang.</div>`;
+  box.innerHTML = "";
+  j.items.forEach(it => {
+    const el = document.createElement("div");
+    el.className = "mine";
+    const acts = it.status !== "published" ? "" : [
+      it.kind === "hadya" ? `<button data-s="given">Berildi</button>` : "",
+      it.kind === "sotuv" ? `<button data-s="sold">Sotildi</button>` : "",
+      `<button data-s="closed">Dolzarb emas</button>`].join("");
+    el.innerHTML = `${thumb(it.thumb)}</div>
+      <div class="body"><div class="t">#${it.id} · ${esc(it.title)}</div>
+      <span class="st ${it.status}">${esc(it.status_text)}</span> <small class="sub">${KIND[it.kind]}</small>
+      ${it.status === "rejected" && it.reject_reason ? `<div class="sub">Sabab: ${esc(it.reject_reason)}</div>` : ""}
+      ${it.status === "awaiting_payment" ? `<div class="sub">${esc(CONFIG.price_text)} o'tkazib, chek rasmini botga yuboring</div>` : ""}
+      ${it.status === "pending" ? `<div class="sub">Natija haqida bot xabar beradi</div>` : ""}
+      <div class="acts">${acts}</div></div>`;
+    el.querySelectorAll(".acts button").forEach(b => b.onclick = async () => {
+      const label = {given:"Berildi", sold:"Sotildi", closed:"Dolzarb emas"}[b.dataset.s];
+      if (!await ask(`E'lonni «${label}» deb belgilaysizmi? Kanaldagi postdan kontaktlaringiz olib tashlanadi.`)) return;
+      const r = await api(`api/my/${it.id}/close`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({status: b.dataset.s})});
+      if (r.ok) { haptic("success"); loadMy(); } else say(r.error);
+    });
+    box.append(el);
+  });
+}
+
+/* ---------- statistika ---------- */
+let STATS = null;
+function setSticker(s) {
+  if (!s || s.error) return;
+  $("#heroCount").textContent = s.given; $("#heroSticker").hidden = !s.given;
+}
+async function loadStats() {
+  const s = STATS = await api("api/stats");
+  if (s.error) return $("#statsBox").innerHTML = `<div class="empty">${esc(s.error)}</div>`;
+  setSticker(s);
+  const max = Math.max(1, ...s.top_regions.map(r => r.n));
+  $("#statsBox").innerHTML = `
+    <div class="bigstat"><div class="ring"><b>${s.given}</b><span>mushuk</span></div><p>hadya orqali yangi uy topdi</p></div>
+    <div class="kpis">
+      <div class="kpi"><div class="n">${s.given_month}</div><div class="l">shu oyda berildi</div></div>
+      <div class="kpi"><div class="n">${s.sold}</div><div class="l">sotildi</div></div>
+      <div class="kpi"><div class="n">${s.active_hadya}</div><div class="l">hozir hadyada</div></div>
+      <div class="kpi"><div class="n">${s.users}</div><div class="l">foydalanuvchi</div></div>
+    </div>
+    ${s.top_regions.length ? `<div class="box"><h2>Eng faol hududlar</h2>${s.top_regions.map(r =>
+      `<div class="bar"><div class="row"><span>${esc(r.region)}</span><b>${r.n}</b></div><div class="track"><div class="fill" style="width:${r.n / max * 100}%"></div></div></div>`).join("")}</div>` : ""}`;
+}
+
+/* ---------- AI savol-javob ---------- */
+let ME = {is_admin:false, ai_left:5, ai_limit:5, ai_on:true}, chatHistory = [], asking = false;
+function refreshAiLeft() {
+  $("#aiLeft").textContent = !ME.ai_on ? "AI hali ulanmagan" : ME.is_admin ? "Admin: cheklovsiz" : `Bugun ${ME.ai_left} ta savol qoldi`;
+}
+// AI javobidagi @username'larni bosiladigan havolaga aylantiradi
+function linkify(text) {
+  return esc(text).replace(/(^|[^\w@])@([A-Za-z][A-Za-z0-9_]{3,31})\b/g,
+    (m, pre, u) => `${pre}<a href="https://t.me/${u}" data-tg="${u}">@${u}</a>`);
+}
+function bubble(text, who) {
+  const d = document.createElement("div");
+  d.className = "bubble " + who;
+  if (who === "ai") d.innerHTML = linkify(text); else d.textContent = text;
+  $("#chat").append(d); d.scrollIntoView({behavior:"smooth", block:"end"});
+  return d;
+}
+async function askAI(question) {
+  question = question.trim();
+  if (asking || question.length < 3) return;
+  if (!inTg) return $("#askErr").textContent = "Savol berish uchun ilovani bot orqali oching.";
+  asking = true; $("#askBtn").disabled = true; $("#askErr").textContent = ""; $("#suggest").hidden = true;
+  bubble(question, "me"); $("#q").value = ""; autoGrow();
+  const wait = bubble("Javob yozilmoqda…", "ai wait");
+  const j = await api("api/ask", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({question, history: chatHistory})});
+  wait.remove();
+  if (j.ok) {
+    bubble(j.answer, "ai");
+    chatHistory.push({role:"user", content:question}, {role:"assistant", content:j.answer});
+    chatHistory = chatHistory.slice(-6);
+    ME.ai_left = j.left; haptic("success");
+  } else {
+    $("#askErr").textContent = j.error || "Xatolik yuz berdi.";
+    if (!chatHistory.length && !$("#chat").children.length) $("#suggest").hidden = false;
+  }
+  refreshAiLeft(); asking = false; $("#askBtn").disabled = false;
+}
+const autoGrow = () => { const t = $("#q"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 120) + "px"; };
+$("#q").addEventListener("input", autoGrow);
+$("#q").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAI($("#q").value); } });
+$("#askForm").onsubmit = e => { e.preventDefault(); askAI($("#q").value); };
+$$("#suggest button").forEach(b => b.onclick = () => askAI(b.textContent));
+
+/* ---------- admin panel ---------- */
+async function loadAdmin() {
+  const j = await api("api/admin/overview");
+  if (j.error) return $("#adminBox").innerHTML = `<div class="empty">${esc(j.error)}</div>`;
+  const c = j.counts, n = k => c[k] || 0;
+  const kpi = (v, l, alert) => `<div class="kpi${alert && v ? " alert" : ""}"><div class="n">${v}</div><div class="l">${l}</div></div>`;
+  const q = j.queue.map(it => `<div class="q">${thumb(it.thumb)}</div>
+    <div class="body"><div class="t">#${it.id} · ${esc(it.title)}</div>
+    <span class="st ${it.status}">${esc(it.status_text)}</span> <small class="sub">${KIND[it.kind]} · ${esc(it.district || it.region)} · ${it.hours ? it.hours + " soat oldin" : "hozirgina"}</small>
+    ${it.user ? `<div class="sub">${esc(it.user)}</div>` : ""}</div></div>`).join("");
+  $("#adminBox").innerHTML = `
+    <div class="kpis">
+      ${kpi(n("pending"), "admin tekshiruvini kutmoqda", true)}
+      ${kpi(n("payment_review"), "chek tekshiruvini kutmoqda", true)}
+      ${kpi(n("awaiting_payment"), "to'lov kutilmoqda")}
+      ${kpi(j.today, "oxirgi 24 soatda yangi")}
+      ${kpi(n("published"), "kanalda faol")}
+      ${kpi(n("given"), "berildi")}
+      ${kpi(n("sold"), "sotildi")}
+      ${kpi(j.users, "foydalanuvchi")}
+    </div>
+    <div class="box"><h2>Navbatdagilar</h2>
+      ${q ? `<div class="queue">${q}</div><p class="sub" style="margin:8px 0 0">Tasdiqlash bot chatidagi tugmalar orqali qilinadi.</p>` : `<p class="sub" style="margin:0">Hozir kutayotgan e'lon yo'q.</p>`}
+    </div>
+    ${j.ai_on ? "" : `<div class="warn">${ICON.warn}<span>AI savol-javob o'chiq. Cloudflare'da OPENAI_API_KEY qo'shilsa yoqiladi.</span></div>`}`;
+  $("#sPrice").value = j.settings.price; $("#sCard").value = j.settings.card; $("#sOwner").value = j.settings.card_owner;
+}
+$("#saveSettings").onclick = async () => {
+  const r = await api("api/admin/settings", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({price: $("#sPrice").value, card: $("#sCard").value, card_owner: $("#sOwner").value})});
+  if (r.ok) { haptic("success"); CONFIG.price_text = r.price_text; $$(".js-price").forEach(e => e.textContent = r.price_text); say("Saqlandi"); }
+  else say(r.error);
+};
+
+document.addEventListener("click", e => {
+  const a = e.target.closest("a[data-tg]");
+  if (a) { e.preventDefault(); openTg("https://t.me/" + a.dataset.tg); return; }
+  if (e.target.closest("[data-admin]") && CONFIG.admin) openTg("https://t.me/" + CONFIG.admin);
+});
+
+/* ---------- ishga tushirish ---------- */
+(async () => {
+  if (inTg) {
+    tg.ready(); tg.expand();
+    tg.MainButton.setParams({color: "#FFD84A", text_color: "#12123A"});
+    try { tg.setBackgroundColor("#F4F1EA"); tg.setBottomBarColor?.("#F4F1EA"); } catch {}
+    headerColor("#2D46F0");
+  } else $("#outside").hidden = false;
+  const [regions, config, stats] = await Promise.all([
+    fetch("regions.json").then(r => r.json()).catch(() => []), api("api/config"), api("api/stats")]);
+  REGIONS = regions; if (config.price_text) CONFIG = config;
+  setSticker(stats);
+  fillRegions($("#fRegion"), "Barcha hududlar");
+  fillRegions($("#region"), "Tanlang…");
+  $$(".js-price").forEach(e => e.textContent = CONFIG.price_text);
+  $$(".js-admin").forEach(e => e.hidden = !CONFIG.admin);
+  search();
+  if (inTg) {
+    const me = await api("api/me");
+    if (!me.error) ME = me;
+    $("#navAdmin").hidden = !ME.is_admin;
+    if (ME.is_admin && location.hash === "#admin") show("admin");
+  }
+  refreshAiLeft();
+})();
+</script>
+</body>
+</html>
