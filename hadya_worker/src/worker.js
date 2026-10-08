@@ -8,8 +8,10 @@
 //   ADMIN_CONTACT (Text)    foydalanuvchilarga ko'rsatiladigan admin: @username
 //   OPENAI_API_KEY (Secret) AI savol-javob bo'limi uchun (ixtiyoriy)
 //   OPENAI_MODEL  (Text)    ixtiyoriy, standart: gpt-4o-mini
+//   SETUP_KEY     (Secret)  /setup sahifasini ochish kaliti (o'zingiz o'ylab topasiz, masalan 20 ta tasodifiy belgi)
 // Bog'lanish (Settings → Bindings): D1 baza, nomi DB
-// Birinchi marta: brauzerda https://<worker-manzili>/setup ni oching.
+// Triggers → Cron: 0 * * * * (har soatda — eslatmalar, muddatlar, tozalash)
+// Birinchi marta: brauzerda https://<worker-manzili>/setup?key=<SETUP_KEY> ni oching.
 
 const INDEX_HTML = __INDEX_HTML__;
 const REGIONS = [{"name":"Toshkent shahri","tag":"Toshkent_shahri","d":[["Bektemir tumani","Bektemir"],["Chilonzor tumani","Chilonzor"],["Mirobod tumani","Mirobod"],["Mirzo Ulug'bek tumani","Mirzo_Ulugbek"],["Olmazor tumani","Olmazor"],["Shayxontohur tumani","Shayxontohur"],["Sirg'ali tumani","Sirgali"],["Uchtepa tumani","Uchtepa"],["Yakkasaroy tumani","Yakkasaroy"],["Yangihayot tumani","Yangihayot"],["Yashnobod tumani","Yashnobod"],["Yunusobod tumani","Yunusobod"]]},{"name":"Toshkent viloyati","tag":"Toshkent_viloyati","d":[["Angren shahri","Angren"],["Bekobod shahri","Bekobod"],["Chirchiq shahri","Chirchiq"],["Nurafshon shahri","Nurafshon"],["Ohangaron shahri","Ohangaron"],["Olmaliq shahri","Olmaliq"],["Yangiyo'l shahri","Yangiyol"],["Bekobod tumani","Bekobod"],["Bo'ka tumani","Boka"],["Bo'stonliq tumani","Bostonliq"],["Chinoz tumani","Chinoz"],["O'rtachirchiq tumani","Ortachirchiq"],["Ohangaron tumani","Ohangaron"],["Oqqo'rg'on tumani","Oqqorgon"],["Parkent tumani","Parkent"],["Piskent tumani","Piskent"],["Qibray tumani","Qibray"],["Quyichirchiq tumani","Quyichirchiq"],["Toshkent tumani","Toshkent"],["Yangiyo'l tumani","Yangiyol"],["Yuqorichirchiq tumani","Yuqorichirchiq"],["Zangiota tumani","Zangiota"]]},{"name":"Andijon viloyati","tag":"Andijon","d":[["Andijon shahri","Andijon"],["Xonobod shahri","Xonobod"],["Andijon tumani","Andijon"],["Asaka tumani","Asaka"],["Baliqchi tumani","Baliqchi"],["Bo'z tumani","Boz"],["Buloqboshi tumani","Buloqboshi"],["Izboskan tumani","Izboskan"],["Jalaquduq tumani","Jalaquduq"],["Marxamat tumani","Marxamat"],["Oltinko'l tumani","Oltinkol"],["Paxtaobod tumani","Paxtaobod"],["Qo'rg'ontepa tumani","Qorgontepa"],["Shahrixon tumani","Shahrixon"],["Ulug'nor tumani","Ulugnor"],["Xo'jaobod tumani","Xojaobod"]]},{"name":"Buxoro viloyati","tag":"Buxoro","d":[["Buxoro shahri","Buxoro"],["Kogon shahri","Kogon"],["Buxoro tumani","Buxoro"],["G'ijduvon tumani","Gijduvon"],["Jondor tumani","Jondor"],["Kogon tumani","Kogon"],["Olot tumani","Olot"],["Peshku tumani","Peshku"],["Qorako'l tumani","Qorakol"],["Qorovulbozor tumani","Qorovulbozor"],["Romitan tumani","Romitan"],["Shofirkon tumani","Shofirkon"],["Vobkent tumani","Vobkent"]]},{"name":"Farg'ona viloyati","tag":"Fargona","d":[["Farg'ona shahri","Fargona"],["Marg'ilon shahri","Margilon"],["Qo'qon shahri","Qoqon"],["Quvasoy shahri","Quvasoy"],["Beshariq tumani","Beshariq"],["Bog'dod tumani","Bogdod"],["Buvayda tumani","Buvayda"],["Dang'ara tumani","Dangara"],["Farg'ona tumani","Fargona"],["Furqat tumani","Furqat"],["O'zbekiston tumani","Ozbekiston"],["Oltiariq tumani","Oltiariq"],["Qo'shtepa tumani","Qoshtepa"],["Quva tumani","Quva"],["Rishton tumani","Rishton"],["So'x tumani","Sox"],["Toshloq tumani","Toshloq"],["Uchko'prik tumani","Uchkoprik"],["Yozyovon tumani","Yozyovon"]]},{"name":"Jizzax viloyati","tag":"Jizzax","d":[["Jizzax shahri","Jizzax"],["Arnasoy tumani","Arnasoy"],["Baxmal tumani","Baxmal"],["Do'stlik tumani","Dostlik"],["Forish tumani","Forish"],["G'allaorol tumani","Gallaorol"],["Mirzacho'l tumani","Mirzachol"],["Paxtakor tumani","Paxtakor"],["Sharof Rashidov tumani","Sharof_Rashidov"],["Yangiobod tumani","Yangiobod"],["Zafarobod tumani","Zafarobod"],["Zarbdor tumani","Zarbdor"],["Zomin tumani","Zomin"]]},{"name":"Xorazm viloyati","tag":"Xorazm","d":[["Urganch shahri","Urganch"],["Xiva shahri","Xiva"],["Bog'ot tumani","Bogot"],["Gurlan tumani","Gurlan"],["Qo'shko'pir tumani","Qoshkopir"],["Shovot tumani","Shovot"],["Tuproqqal'a tumani","Tuproqqala"],["Urganch tumani","Urganch"],["Xazorasp tumani","Xazorasp"],["Xiva tumani","Xiva"],["Xonqa tumani","Xonqa"],["Yangiariq tumani","Yangiariq"],["Yangibozor tumani","Yangibozor"]]},{"name":"Namangan viloyati","tag":"Namangan","d":[["Namangan shahri","Namangan"],["Chortoq tumani","Chortoq"],["Chust tumani","Chust"],["Davlatobod tumani","Davlatobod"],["Kosonsoy tumani","Kosonsoy"],["Mingbuloq tumani","Mingbuloq"],["Namangan tumani","Namangan"],["Norin tumani","Norin"],["Pop tumani","Pop"],["To'raqo'rg'on tumani","Toraqorgon"],["Uchqo'rg'on tumani","Uchqorgon"],["Uychi tumani","Uychi"],["Yangi Namangan tumani","Yangi_Namangan"],["Yangiqo'rg'on tumani","Yangiqorgon"]]},{"name":"Navoiy viloyati","tag":"Navoiy","d":[["Navoiy shahri","Navoiy"],["Zarafshon shahri","Zarafshon"],["G'ozg'on tumani","Gozgon"],["Karmana tumani","Karmana"],["Konimex tumani","Konimex"],["Navbahor tumani","Navbahor"],["Nurota tumani","Nurota"],["Qiziltepa tumani","Qiziltepa"],["Tomdi tumani","Tomdi"],["Uchquduq tumani","Uchquduq"],["Xatirchi tumani","Xatirchi"]]},{"name":"Qashqadaryo viloyati","tag":"Qashqadaryo","d":[["Qarshi shahri","Qarshi"],["Shahrisabz shahri","Shahrisabz"],["Chiroqchi tumani","Chiroqchi"],["Dehqonobod tumani","Dehqonobod"],["G'uzor tumani","Guzor"],["Kasbi tumani","Kasbi"],["Kitob tumani","Kitob"],["Ko'kdala tumani","Kokdala"],["Koson tumani","Koson"],["Mirishkor tumani","Mirishkor"],["Muborak tumani","Muborak"],["Nishon tumani","Nishon"],["Qamashi tumani","Qamashi"],["Qarshi tumani","Qarshi"],["Shahrisabz tumani","Shahrisabz"],["Yakkabog' tumani","Yakkabog"]]},{"name":"Qoraqalpog'iston Respublikasi","tag":"Qoraqalpogiston","d":[["Nukus shahri","Nukus"],["Amudaryo tumani","Amudaryo"],["Beruniy tumani","Beruniy"],["Bo'zatov tumani","Bozatov"],["Chimboy tumani","Chimboy"],["Ellikqal'a tumani","Ellikqala"],["Kegeyli tumani","Kegeyli"],["Mo'ynoq tumani","Moynoq"],["Nukus tumani","Nukus"],["Qanliko'l tumani","Qanlikol"],["Qo'ng'irot tumani","Qongirot"],["Qorao'zak tumani","Qoraozak"],["Shumanay tumani","Shumanay"],["Taxiatosh tumani","Taxiatosh"],["Taxtako'pir tumani","Taxtakopir"],["To'rtko'l tumani","Tortkol"],["Xo'jayli tumani","Xojayli"]]},{"name":"Samarqand viloyati","tag":"Samarqand","d":[["Kattaqo'rg'on shahri","Kattaqorgon"],["Samarqand shahri","Samarqand"],["Bulung'ur tumani","Bulungur"],["Ishtixon tumani","Ishtixon"],["Jomboy tumani","Jomboy"],["Kattaqo'rg'on tumani","Kattaqorgon"],["Narpay tumani","Narpay"],["Nurobod tumani","Nurobod"],["Oqdaryo tumani","Oqdaryo"],["Pastdarg'om tumani","Pastdargom"],["Paxtachi tumani","Paxtachi"],["Payariq tumani","Payariq"],["Qo'shrabot tumani","Qoshrabot"],["Samarqand tumani","Samarqand"],["Tayloq tumani","Tayloq"],["Urgut tumani","Urgut"]]},{"name":"Sirdaryo viloyati","tag":"Sirdaryo","d":[["Baxt shahri","Baxt"],["Guliston shahri","Guliston"],["Shirin shahri","Shirin"],["Yangiyer shahri","Yangiyer"],["Boyovut tumani","Boyovut"],["Guliston tumani","Guliston"],["Mirzaobod tumani","Mirzaobod"],["Oqoltin tumani","Oqoltin"],["Sardoba tumani","Sardoba"],["Sayxunobod tumani","Sayxunobod"],["Sirdaryo tumani","Sirdaryo"],["Xovos tumani","Xovos"]]},{"name":"Surxondaryo viloyati","tag":"Surxondaryo","d":[["Termiz shahri","Termiz"],["Angor tumani","Angor"],["Bandixon tumani","Bandixon"],["Boysun tumani","Boysun"],["Denov tumani","Denov"],["Jarqo'rg'on tumani","Jarqorgon"],["Muzrabot tumani","Muzrabot"],["Oltinsoy tumani","Oltinsoy"],["Qiziriq tumani","Qiziriq"],["Qumqo'rg'on tumani","Qumqorgon"],["Sariosiyo tumani","Sariosiyo"],["Sherobod tumani","Sherobod"],["Sho'rchi tumani","Shorchi"],["Termiz tumani","Termiz"],["Uzun tumani","Uzun"]]}];
@@ -45,11 +47,19 @@ const MAX_MEDIA = 3;
 const MAX_PHOTO_MB = 8;
 const MAX_VIDEO_MB = 20;
 const MB = 1024 * 1024;
+const DAY = 86400;
+const CHECK_DAYS = 30; // shuncha kundan keyin egasidan «Hali dolzarbmi?» deb so'raladi
+const ANSWER_DAYS = 3; // javob bo'lmasa, shuncha kundan keyin «Dolzarb emas» deb yopiladi
+const PAY_REMIND_HOURS = 24; // to'lov muddati tugashiga shuncha soat qolganda eslatma
+const ADMIN_REMIND_HOURS = 6; // admin shuncha soatdan beri ko'rmagan e'lonlar haqida eslatma
+const TEMP_KEEP_DAYS = 2; // vaqtinchalik sozlamalar (albom, chek tanlovi) shuncha kun saqlanadi
+// Shu holatdagi e'lonlar hammaga ochiq (ilovada ko'rinadi)
+const PUBLIC_STATUSES = ["published", "given", "sold", "closed"];
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT,
      banned INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)`,
+  `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS listings (
      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, username TEXT, first_name TEXT,
      kind TEXT NOT NULL, region TEXT NOT NULL, district TEXT NOT NULL,
@@ -59,6 +69,8 @@ const SCHEMA = [
      created_at INTEGER NOT NULL, published_at INTEGER, closed_at INTEGER, admin_msgs TEXT, pay_msgs TEXT)`,
   `CREATE TABLE IF NOT EXISTS ai_usage (user_id INTEGER NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0,
      PRIMARY KEY (user_id, day))`,
+  `CREATE TABLE IF NOT EXISTS reports (listing_id INTEGER NOT NULL, user_id INTEGER NOT NULL, reason TEXT,
+     created_at INTEGER NOT NULL, PRIMARY KEY (listing_id, user_id))`,
   `CREATE INDEX IF NOT EXISTS ix_status ON listings(status, region, district)`,
   `CREATE INDEX IF NOT EXISTS ix_user ON listings(user_id)`,
 ];
@@ -66,16 +78,27 @@ const SCHEMA = [
 const MIGRATIONS = [
   "ALTER TABLE listings ADD COLUMN admin_msgs TEXT",
   "ALTER TABLE listings ADD COLUMN pay_msgs TEXT",
+  "ALTER TABLE listings ADD COLUMN check_at INTEGER", // keyingi «Hali dolzarbmi?» savoli vaqti
+  "ALTER TABLE listings ADD COLUMN asked_at INTEGER", // savol yuborilgan vaqt (javob kutilmoqda)
+  "ALTER TABLE listings ADD COLUMN pay_reminded INTEGER", // to'lov eslatmasi yuborilganmi
+  "ALTER TABLE settings ADD COLUMN updated_at INTEGER", // vaqtinchalik yozuvlarni tozalash uchun
 ];
+// Sxema o'zgarsa shu raqam oshiriladi — shunda migratsiyalar bir marta qayta ishga tushadi
+const SCHEMA_VERSION = "2";
 let schemaReady = false;
-async function ensureSchema(env) {
-  if (schemaReady || !env.DB) return;
+async function ensureSchema(env, force = false) {
+  if ((schemaReady && !force) || !env.DB) return;
+  if (!force) {
+    const v = await env.DB.prepare("SELECT value FROM settings WHERE key='schema_v'").first("value").catch(() => null);
+    if (v === SCHEMA_VERSION) return void (schemaReady = true);
+  }
   try {
     await env.DB.batch(SCHEMA.map((q) => env.DB.prepare(q)));
   } catch (e) {
     console.log("Sxema:", e.message);
   }
   for (const q of MIGRATIONS) await env.DB.prepare(q).run().catch(() => {});
+  await setSetting(env, "schema_v", SCHEMA_VERSION).catch((e) => console.log("Sxema versiyasi:", e.message));
   schemaReady = true;
 }
 
@@ -89,6 +112,7 @@ const err = (msg, status = 400) => json({ ok: false, error: msg }, status);
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
 function fmtPhone(p) {
+  if (!p) return "";
   const d = String(p).replace(/^\+/, "");
   return d.length === 12 ? `+${d.slice(0, 3)} ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8, 10)} ${d.slice(10)}` : p;
 }
@@ -141,9 +165,16 @@ async function getSetting(env, key, def = null) {
   const r = await env.DB.prepare("SELECT value FROM settings WHERE key=?").bind(key).first();
   return r ? r.value : def;
 }
+// value === null bo'lsa yozuv o'chiriladi (bo'sh qatorlar bazada to'planib qolmasin)
 async function setSetting(env, key, value) {
-  await env.DB.prepare("INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
-    .bind(key, value === null ? null : String(value)).run();
+  if (value === null || value === undefined) {
+    await env.DB.prepare("DELETE FROM settings WHERE key=?").bind(key).run();
+    return;
+  }
+  await env.DB.prepare(
+    "INSERT INTO settings (key, value, updated_at) VALUES (?,?,?) " +
+    "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at"
+  ).bind(key, String(value), now()).run();
 }
 const getPrice = async (env) => parseInt(await getSetting(env, "price", DEFAULT_PRICE), 10);
 
@@ -153,6 +184,17 @@ async function upsertUser(env, u) {
     "ON CONFLICT(id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name"
   ).bind(u.id, u.username || null, u.first_name || null, now()).run();
 }
+// "123456789" yoki "@username" bo'yicha foydalanuvchini topadi (u botga kamida bir marta yozgan bo'lishi kerak)
+async function findUser(env, who) {
+  const s = String(who || "").trim();
+  if (/^\d+$/.test(s)) return env.DB.prepare("SELECT * FROM users WHERE id=?").bind(+s).first();
+  const name = cleanUsername(s);
+  if (!name) return null;
+  return env.DB.prepare("SELECT * FROM users WHERE lower(username)=lower(?)").bind(name).first();
+}
+const isBanned = async (env, id) =>
+  !!(await env.DB.prepare("SELECT banned FROM users WHERE id=?").bind(id).first("banned"));
+
 async function botUsername(env) {
   let u = await getSetting(env, "bot_username");
   if (!u) {
@@ -205,8 +247,9 @@ function buildCaption(env, l, bot, closedAs, extra) {
   if (extra) lines.push(`🔖Qo'shimcha ma'lumot: ${esc(extra)}`);
   if (closedAs) lines.push(CLOSED_LABEL[closedAs]);
   else {
-    const tgLine = l.username ? `@${esc(l.username)}` : `<a href="tg://user?id=${l.user_id}">Yozish</a>`;
-    lines.push(`🌎 Telegram: ${tgLine}`, `📞 ${fmtPhone(d.phone)}`);
+    // Kontakt: foydalanuvchi qaysi birini kiritgan bo'lsa, faqat o'shasi chiqadi
+    if (l.username) lines.push(`🌎 Telegram: @${esc(l.username)}`);
+    if (d.phone) lines.push(`📞 ${fmtPhone(d.phone)}`);
   }
   lines.push("", `✅E'lon berish uchun @${bot} ga yozing`);
   if (String(env.CHANNEL || "").startsWith("@")) lines.push("", `Kanal: ${esc(env.CHANNEL)}`);
@@ -226,6 +269,14 @@ function caption(env, l, bot, closedAs = null) {
 }
 
 // ---------------------------------------------------------------- forma tekshiruvi
+// "" → "" (kiritilmagan), noto'g'ri → false, to'g'ri → "username" (@ belgisisiz).
+// t.me/username havolasi yozilsa ham qabul qilinadi.
+function cleanUsername(raw) {
+  const s = String(raw || "").trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i, "").replace(/^@/, "");
+  if (!s) return "";
+  return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(s) ? s : false;
+}
+
 function cleanForm(form) {
   const g = (k, n = 80) => String(form.get(k) ?? "").trim().slice(0, n);
   const kind = g("kind", 10);
@@ -234,9 +285,14 @@ function cleanForm(form) {
   const r = findRegion(region);
   if (!r) return "Hududni tanlang.";
   if (!r.d.some((x) => x[0] === district)) return "Tuman yoki shaharni tanlang.";
-  const phone = g("phone", 25).replace(/\D/g, "");
-  if (!/^998\d{9}$/.test(phone)) return "Telefon raqam +998 XX XXX XX XX ko'rinishida bo'lsin.";
-  const data = { phone: "+" + phone };
+  // Kontakt: telefon va Telegram username ixtiyoriy, lekin kamida bittasi bo'lishi shart
+  let phone = g("phone", 25).replace(/\D/g, "");
+  if (phone === "998") phone = ""; // faqat "+998 " qolgan bo'lsa — kiritilmagan hisoblanadi
+  if (phone && !/^998\d{9}$/.test(phone)) return "Telefon raqam +998 XX XXX XX XX ko'rinishida bo'lsin.";
+  const username = cleanUsername(g("tg_username", 40));
+  if (username === false) return "Telegram username noto'g'ri. Masalan: @ism_familiya (5–32 ta lotin harf, raqam yoki _).";
+  if (!phone && !username) return "Telefon raqam yoki Telegram username'dan kamida bittasini yozing.";
+  const data = { phone: phone ? "+" + phone : null, contact_username: username || null };
 
   if (kind === "reklama") {
     Object.assign(data, { title: g("title", 60), about: g("about", 300), price: g("price", 40), extra: g("extra", 300) });
@@ -286,7 +342,8 @@ async function webhookSecret(env) {
 }
 
 // ---------------------------------------------------------------- klaviaturalar
-const appKb = (origin) => ({ inline_keyboard: [[{ text: "📱 Ilovani ochish", web_app: { url: origin + "/" } }]] });
+const appKb = (origin, hash = "", text = "📱 Ilovani ochish") =>
+  ({ inline_keyboard: [[{ text, web_app: { url: origin + "/" + (hash ? "#" + hash : "") } }]] });
 const modKb = (l) => ({
   inline_keyboard: [[
     { text: l.kind === "hadya" ? "✅ Tasdiqlash" : "✅ Tasdiqlash → to'lov", callback_data: `m:ok:${l.id}` },
@@ -318,7 +375,8 @@ function mediaItems(items, cap) {
 async function sendToAdmins(env, l, files) {
   const bot = await botUsername(env);
   const cap = caption(env, l, bot);
-  const header = `🆕 <b>${KIND_NAMES[l.kind]}</b> e'lon #${l.id} — ${esc(l.region)}, ${esc(l.district)}`;
+  const header = `🆕 <b>${KIND_NAMES[l.kind]}</b> e'lon #${l.id} — ${esc(l.region)}, ${esc(l.district)}\n` +
+    `👤 <a href="tg://user?id=${l.user_id}">${esc(l.first_name || "Foydalanuvchi")}</a> (ID: <code>${l.user_id}</code>)`;
   let stored = null;
   const refs = [];
   for (const admin of adminIds(env)) {
@@ -371,6 +429,7 @@ async function publish(env, id) {
   await updateListing(env, id, {
     status: S.PUBLISHED, channel_msg_id: first.message_id,
     channel_username: first.chat.username || null, published_at: now(),
+    check_at: now() + CHECK_DAYS * DAY, asked_at: null,
   });
   const link = first.chat.username ? `https://t.me/${first.chat.username}/${first.message_id}` : "";
   await tgSafe(env, "sendMessage", {
@@ -383,10 +442,13 @@ async function publish(env, id) {
 async function closeListing(env, l, status) {
   if (!(await changeStatus(env, l.id, S.PUBLISHED, status, { closed_at: now() }))) return false;
   if (l.data.raw !== undefined) {
-    // Kanaldan import qilingan post: asl matn saqlanadi, faqat kontakt qatorlari almashtiriladi
-    const text = closedRaw(l, status);
-    const method = l.media.length ? "editMessageCaption" : "editMessageText";
-    await tgSafe(env, method, { chat_id: env.CHANNEL, message_id: l.channel_msg_id, [l.media.length ? "caption" : "text"]: text });
+    // Kanaldan import qilingan post: asl matn va formatlash saqlanadi, faqat kontakt qatorlari almashtiriladi
+    const isCap = l.media.length > 0;
+    const { text, entities } = closedRaw(l, status, isCap ? 1024 : 4096);
+    await tgSafe(env, isCap ? "editMessageCaption" : "editMessageText", {
+      chat_id: env.CHANNEL, message_id: l.channel_msg_id, [isCap ? "caption" : "text"]: text,
+      ...(entities.length ? { [isCap ? "caption_entities" : "entities"]: entities } : {}),
+    });
   } else {
     const bot = await botUsername(env);
     await tgSafe(env, "editMessageCaption", {
@@ -500,9 +562,11 @@ function parsePost(text, skipNames) {
   return { kind, ...place, data, username, status };
 }
 
-// Yopilganda import qilingan postning asl matnidan faqat kontakt qatorlari olib tashlanadi
-function closedRaw(l, status) {
-  const label = { given: "✅ Berildi", sold: "✅ Sotildi", closed: "⛔️ E'lon dolzarb emas" }[status];
+// Import qilingan postning asl matnidan kontakt qatorlarini olib tashlaydi (o'rniga `label` qo'yiladi).
+// Formatlash (qalin yozuv, havolalar) ham saqlanadi: Telegram uni matndan alohida "entities" ro'yxatida
+// beradi — har biri "shu joydan (offset) shuncha belgi (length) qalin" degan ma'lumot. Qatorlar
+// o'chirilganda matn suriladi, shuning uchun har bir entity'ning joyi qayta hisoblanadi.
+function stripContacts(l, label, limit) {
   const own = l.username ? "@" + l.username.toLowerCase() : null;
   const isContact = (ln) => {
     const n = normTxt(ln);
@@ -510,17 +574,38 @@ function closedRaw(l, status) {
     if (own && n.includes(own)) return true;
     return ln.replace(/\D/g, "").length >= 9 && !/narx|som|sum|\$/.test(n);
   };
-  const out = [];
-  let placed = false;
-  for (const ln of String(l.data.raw).split("\n")) {
+  const lines = String(l.data.raw).split("\n");
+  let out = "";
+  let pos = 0; // asl matndagi joriy o'rin
+  let placed = !label;
+  const segs = []; // saqlangan bo'laklar: [asl boshi, asl oxiri, yangi boshi]
+  lines.forEach((ln, i) => {
+    const piece = ln + (i < lines.length - 1 ? "\n" : "");
     if (isContact(ln)) {
-      if (!placed) out.push(label);
+      if (!placed) out += label + (piece.endsWith("\n") ? "\n" : "");
       placed = true;
-    } else out.push(ln);
+    } else {
+      const last = segs.at(-1);
+      // ketma-ket saqlangan qatorlar bitta bo'lak (bir necha qatorli qalin yozuv ham saqlansin)
+      if (last && last[1] === pos && last[2] + (last[1] - last[0]) === out.length) last[1] += piece.length;
+      else segs.push([pos, pos + piece.length, out.length]);
+      out += piece;
+    }
+    pos += piece.length;
+  });
+  if (!placed) out += "\n\n" + label;
+  const text = out.replace(/\n+$/, "").slice(0, limit);
+  const entities = [];
+  for (const e of Array.isArray(l.data.entities) ? l.data.entities : []) {
+    const seg = segs.find(([a, b]) => a <= e.offset && e.offset + e.length <= b);
+    if (!seg) continue; // kontakt qatoriga tegishli formatlash — tashlab yuboriladi
+    const offset = seg[2] + (e.offset - seg[0]);
+    if (offset + e.length <= text.length) entities.push({ ...e, offset });
   }
-  if (!placed) out.push("", label);
-  return out.join("\n").slice(0, 1024);
+  return { text, entities };
 }
+const CLOSED_RAW_LABEL = { given: "✅ Berildi", sold: "✅ Sotildi", closed: "⛔️ E'lon dolzarb emas" };
+const closedRaw = (l, status, limit = 1024) => stripContacts(l, CLOSED_RAW_LABEL[status], limit);
 
 function mediaOf(m) {
   if (m.photo) return [{ type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id }];
@@ -559,6 +644,9 @@ async function importPost(env, m, chMsgId, chUsername, date, doneMode = false) {
   const skip = [await botUsername(env), String(env.CHANNEL || "").replace(/^@/, "")];
   const p = parsePost(text, skip);
   if (!p) return { error: "Turi aniqlanmadi: postda #hadyaga, #sotiladi yoki #reklama bo'lishi kerak." };
+  // Formatlash (qalin, havola...) saqlanadi — e'lon yopilganda kanaldagi post shu bilan qayta yoziladi
+  const ents = m.caption_entities || m.entities;
+  if (ents?.length) p.data.entities = ents;
   if (doneMode && p.status === S.PUBLISHED) p.status = DONE_STATUS[p.kind];
   const closed = p.status !== S.PUBLISHED;
   const ins = await env.DB.prepare(
@@ -634,11 +722,33 @@ async function onMessage(env, origin, m) {
     const cmd = rawCmd.split("@")[0].toLowerCase();
     const args = rest.join(" ");
     if (cmd === "/start") {
+      // Ulashilgan havola: t.me/<bot>?start=l123 → ilova shu e'lonni ochadi
+      const shared = args.match(/^l(\d+)$/);
+      if (shared) {
+        const l = await getListing(env, +shared[1]);
+        if (l && PUBLIC_STATUSES.includes(l.status)) {
+          return reply(`🐾 ${KIND_NAMES[l.kind]}: ${shortTitle(l)}\n📍 ${placeText(l)}\n\nE'lonni ko'rish uchun tugmani bosing 👇`,
+            { reply_markup: appKb(origin, "l" + l.id, "🐱 E'lonni ochish") });
+        }
+      }
       let t = "Assalomu alaykum! 🐾\n\nBu yerda mushukni hadyaga berish (bepul), sotish yoki reklama joylash uchun " +
         "e'lon berasiz va hududingizdagi mushuklarni qidirasiz.\n\nPastdagi tugmani bosing 👇";
       return reply(t, { reply_markup: appKb(origin) });
     }
     if (isAdmin(env, u.id)) {
+      if (cmd === "/ban" || cmd === "/unban") {
+        const ban = cmd === "/ban";
+        const [who, ...why] = args.split(/\s+/);
+        const target = await findUser(env, who);
+        if (!target) return reply(`Foydalanuvchi topilmadi. Masalan:\n${cmd} 123456789\n${cmd} @username`);
+        if (ban && isAdmin(env, target.id)) return reply("Adminni ban qilib bo'lmaydi.");
+        await env.DB.prepare("UPDATE users SET banned=? WHERE id=?").bind(ban ? 1 : 0, target.id).run();
+        const name = target.username ? "@" + target.username : target.first_name || target.id;
+        return reply(ban
+          ? `🚫 ${name} (ID ${target.id}) ban qilindi${why.length ? ": " + why.join(" ") : ""}.\n` +
+            "Endi u e'lon bera olmaydi, shikoyat va AI savol yubora olmaydi. Kanaldagi faol e'lonlari o'zgarmaydi."
+          : `✅ ${name} (ID ${target.id}) bandan chiqarildi.`);
+      }
       if (cmd === "/admin") {
         return reply(await adminSummary(env), {
           parse_mode: "HTML",
@@ -686,7 +796,9 @@ async function adminSummary(env) {
     "/karta 8600123412341234 Ism Familiya — to'lov kartasi\n" +
     "Kanaldagi eski postni ilovaga qo'shish yoki boshqarish — postni shu botga forward qiling\n" +
     "/berilgan — berilgan/sotilgan eski postlarni statistikaga kiritish rejimi\n" +
-    "/oddiy — rejimni o'chirish\n\n" +
+    "/oddiy — rejimni o'chirish\n" +
+    "/ban 123456789 yoki /ban @username — foydalanuvchini bloklash\n" +
+    "/unban 123456789 — blokdan chiqarish\n\n" +
     `Hozirgi narx: ${fmtSum(await getPrice(env))}\n` +
     `Karta: ${esc(await getSetting(env, "card", "kiritilmagan"))} ${esc(await getSetting(env, "card_owner", ""))}\n\n` +
     `Foydalanuvchilar: ${st.users}\nBerildi: ${st.given} | Sotildi: ${st.sold}\n` +
@@ -779,6 +891,25 @@ async function onCallback(env, cq) {
     return attachReceipt(env, chat, l, fileId, isDoc);
   }
 
+  // E'lon egasi: «Hali dolzarbmi?» savoliga javob
+  if (ns === "u") {
+    const l = await getListing(env, Number(idStr));
+    if (!l || l.user_id !== cq.from.id) return answer("E'lon topilmadi.", true);
+    if (l.status !== S.PUBLISHED) {
+      await setKb(null);
+      return answer("Bu e'lon allaqachon yopilgan.", true);
+    }
+    if (a === "keep") {
+      await updateListing(env, l.id, { check_at: now() + CHECK_DAYS * DAY, asked_at: null });
+      await edit(chat, mid, `👍 #${l.id} e'loni faol qoldi. ${CHECK_DAYS} kundan keyin yana so'raymiz.`);
+      return answer("Faol qoldi");
+    }
+    if (!["given", "sold", "closed"].includes(a)) return answer();
+    if (!(await closeListing(env, l, a))) return answer("Holati allaqachon o'zgargan.", true);
+    await edit(chat, mid, `${CLOSED_REPLY[a]}: #${l.id} yopildi, kanaldagi postdan kontaktlaringiz olib tashlandi. Rahmat! 🐾`);
+    return answer("Belgilandi");
+  }
+
   if (!isAdmin(env, cq.from.id)) return answer("Bu tugma faqat adminlar uchun.", true);
   const id = Number(idStr);
   const l = await getListing(env, id);
@@ -790,6 +921,19 @@ async function onCallback(env, cq) {
       if (!(await changeStatus(env, id, [S.PUBLISHED, S.GIVEN, S.SOLD, S.CLOSED], "hidden"))) return answer("Holati allaqachon o'zgargan.", true);
       await done(`🗑 #${id} ilovadan olib tashlandi (kanaldagi post o'zgarmadi) — ${who}`);
       return answer("Olib tashlandi");
+    }
+    // Shikoyat xabaridagi tugmalar
+    if (a === "ignore") {
+      await done(`👌 #${id} bo'yicha shikoyat ko'rib chiqildi, o'zgarish qilinmadi — ${who}`);
+      return answer();
+    }
+    if (a === "ban") {
+      if (!l.user_id) return answer("Bu e'lon kanaldan import qilingan, egasi botda yo'q.", true);
+      if (isAdmin(env, l.user_id)) return answer("Adminni ban qilib bo'lmaydi.", true);
+      await env.DB.prepare("UPDATE users SET banned=1 WHERE id=?").bind(l.user_id).run();
+      await setKb(adminManageKb(l)); // ban tugmasi yo'qoladi, e'lonni yopish tugmalari qoladi
+      await tgSafe(env, "sendMessage", { chat_id: chat, text: `🚫 #${id} egasi (ID ${l.user_id}) ban qilindi — ${who}` });
+      return answer("Ban qilindi");
     }
     if (!["given", "sold", "closed"].includes(a)) return answer();
     if (!(await closeListing(env, l, a))) return answer("Bu e'lon kanalda faol emas.", true);
@@ -872,14 +1016,25 @@ async function onCallback(env, cq) {
 }
 
 // ---------------------------------------------------------------- Mini App API
-function card(l) {
+// Yopiq e'lon (admin tekshiruvida, to'lov kutilmoqda...) rasmini faqat egasi va admin ko'radi.
+// Ular uchun rasm manzili oxiriga maxfiy kalit (k=...) qo'shiladi. Kalitni faqat server yasay oladi
+// (BOT_TOKEN asosida), shuning uchun begona odam /api/media/5/0 deb terib, rasmni ocha olmaydi.
+async function mediaKey(env, id) {
+  return hex(await hmacRaw(new TextEncoder().encode("media:" + env.BOT_TOKEN), String(id))).slice(0, 24);
+}
+function card(l, key = "") {
+  const first = l.media[0];
+  // Videoning kichik rasmi (thumbnail) bo'lmasa, kartada rasm o'rniga belgi chiqadi
+  const hasThumb = first && (first.type === "photo" || first.thumb);
   return {
     id: l.id, kind: l.kind, title: shortTitle(l), region: l.region, district: l.district,
-    price: priceText(l), thumb: l.media.length ? `api/media/${l.id}/0?thumb=1` : null,
+    price: priceText(l), thumb: hasThumb ? `api/media/${l.id}/0?thumb=1${key ? "&k=" + key : ""}` : null,
     status: l.status, status_text: STATUS_TEXT[l.status] || l.status, reject_reason: l.reject_reason || null,
     published_at: l.published_at || null,
   };
 }
+// Ochiq bo'lmagan e'lonlar uchun kalit qo'shib karta yasaydi
+const privateCard = async (env, l) => card(l, PUBLIC_STATUSES.includes(l.status) ? "" : await mediaKey(env, l.id));
 
 async function stats(env) {
   const t = new Date(Date.now() + 5 * 3600e3); // Toshkent vaqti
@@ -914,15 +1069,21 @@ async function apiListings(env, url) {
   return json({ items: results.map((r) => card(parseRow(r))), more: results.length === 20 });
 }
 
-async function apiDetail(env, id) {
+async function apiDetail(env, request, id) {
   const l = await getListing(env, id);
-  if (!l || ![S.PUBLISHED, S.GIVEN, S.SOLD, S.CLOSED].includes(l.status)) return err("E'lon topilmadi", 404);  const d = l.data;
+  if (!l || !PUBLIC_STATUSES.includes(l.status)) return err("E'lon topilmadi", 404);
+  const d = l.data;
   const open = l.status === S.PUBLISHED;
+  // Kontaktlar (telefon, username) faqat Telegram ichidan ochilgan ilovaga beriladi —
+  // shunda skript bilan barcha raqamlarni yig'ib olib bo'lmaydi
+  const viewer = open ? await authUser(env, request.headers.get("x-init-data")) : null;
   let rows, text = null;
   if (d.imported) {
-    // Kanaldan import qilingan: asl post matni ko'rsatiladi (yopilgan bo'lsa — kontaktlarsiz)
+    // Kanaldan import qilingan: asl post matni ko'rsatiladi (yopilgan bo'lsa yoki ko'ruvchi noma'lum bo'lsa — kontaktlarsiz)
     rows = [["Narxi", priceText(l)], ["Manzil", placeText(l)]];
-    const body = open ? d.raw : closedRaw(l, l.status === S.SOLD ? "sold" : l.status === S.CLOSED ? "closed" : "given");
+    const body = open && viewer ? d.raw
+      : open ? stripContacts(l, null, 4096).text
+      : closedRaw(l, l.status === S.SOLD ? "sold" : l.status === S.CLOSED ? "closed" : "given", 4096).text;
     text = body.split("\n").filter((ln) => !/e.?lon berish uchun|^kanal\s*:/i.test(ln.trim())).join("\n").trim();
   } else {
     rows = l.kind === "reklama"
@@ -937,20 +1098,87 @@ async function apiDetail(env, id) {
     ...card(l), rows, text,
     post: l.channel_username ? `https://t.me/${l.channel_username}/${l.channel_msg_id}` : null,
     media: l.media.map((m, i) => ({ type: m.type, url: `api/media/${l.id}/${i}` })),
-    contact: hasContact ? { username: l.username, phone: d.phone ? fmtPhone(d.phone) : null } : null,
+    contact: hasContact && viewer ? { username: l.username, phone: d.phone ? fmtPhone(d.phone) : null } : null,
+    contact_hidden: !!(hasContact && !viewer), // kontakt bor, lekin ko'rish uchun ilovani bot orqali ochish kerak
+    mine: !!(viewer && viewer.id === l.user_id),
   });
 }
 
-// Telegram'dagi rasm/videoni ilovaga uzatadi (token foydalanuvchiga ko'rinmaydi)
-async function apiMedia(env, request, id, idx, thumb) {
+// Shikoyat: foydalanuvchi e'lonni adminlarga yuboradi (bitta e'longa bir kishi bir marta)
+const REPORT_REASONS = {
+  scam: "Firibgarlik / oldindan pul so'rayapti",
+  sold: "Mushuk allaqachon berilgan yoki sotilgan",
+  wrong: "Ma'lumot noto'g'ri (narx, tur, joy)",
+  other: "Boshqa sabab",
+};
+async function apiReport(env, request, id) {
+  const user = await authUser(env, request.headers.get("x-init-data"));
+  if (!user) return err("Shikoyat qilish uchun ilovani bot orqali oching.", 401);
+  if (await isBanned(env, user.id)) return err("Sizga bu amal cheklangan.", 403);
   const l = await getListing(env, id);
-  if (!l || idx >= l.media.length || l.status === S.REJECTED) return new Response("Topilmadi", { status: 404 });
+  if (!l || l.status !== S.PUBLISHED) return err("E'lon topilmadi.", 404);
+  if (l.user_id === user.id) return err("O'z e'loningizga shikoyat qilib bo'lmaydi.");
+  const b = await request.json().catch(() => ({}));
+  const reason = REPORT_REASONS[b.reason] ? b.reason : "other";
+  const note = String(b.note || "").trim().slice(0, 300);
+  const ins = await env.DB.prepare("INSERT OR IGNORE INTO reports (listing_id, user_id, reason, created_at) VALUES (?,?,?,?)")
+    .bind(id, user.id, reason + (note ? ": " + note : ""), now()).run();
+  if (ins.meta.changes !== 1) return err("Bu e'longa allaqachon shikoyat yuborgansiz. Rahmat!");
+  const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE listing_id=?").bind(id).first("n");
+  const from = user.username ? "@" + esc(user.username) : esc(user.first_name || "Foydalanuvchi");
+  const link = l.channel_username ? `\nhttps://t.me/${l.channel_username}/${l.channel_msg_id}` : "";
+  const text = `🚩 <b>Shikoyat</b>: e'lon #${id} (${KIND_NAMES[l.kind]}, ${esc(placeText(l))})${link}\n` +
+    `Sabab: ${esc(REPORT_REASONS[reason])}${note ? "\nIzoh: " + esc(note) : ""}\n` +
+    `Kimdan: ${from} (<code>${user.id}</code>)\nBu e'longa jami shikoyatlar: ${total}`;
+  const kb = adminManageKb(l);
+  kb.inline_keyboard.push([
+    ...(l.user_id ? [{ text: "🚫 Egasini ban qilish", callback_data: `a:ban:${id}` }] : []),
+    { text: "👌 E'tiborsiz qoldirish", callback_data: `a:ignore:${id}` },
+  ]);
+  for (const admin of adminIds(env)) {
+    await tgSafe(env, "sendMessage", { chat_id: admin, text, parse_mode: "HTML", reply_markup: kb, disable_web_page_preview: true });
+  }
+  return json({ ok: true });
+}
+
+// Telegram faylining yuklab olish manzili (file_path) kamida 1 soat amal qiladi. Har safar getFile
+// so'ramaslik uchun xotirada 50 daqiqa saqlanadi (Worker bir necha so'rovni bitta nusxada bajaradi).
+const filePathMemo = new Map();
+async function telegramFilePath(env, fileId) {
+  const hit = filePathMemo.get(fileId);
+  if (hit && hit.until > Date.now()) return hit.path;
+  const f = await tg(env, "getFile", { file_id: fileId });
+  if (filePathMemo.size > 500) filePathMemo.clear();
+  filePathMemo.set(fileId, { path: f.file_path, until: Date.now() + 50 * 60e3 });
+  return f.file_path;
+}
+
+// Telegram'dagi rasm/videoni ilovaga uzatadi (token foydalanuvchiga ko'rinmaydi)
+async function apiMedia(env, request, ctx, url, id, idx) {
+  const thumb = url.searchParams.get("thumb") === "1";
+  const l = await getListing(env, id);
+  if (!l || idx >= l.media.length) return new Response("Topilmadi", { status: 404 });
+  // Ochiq bo'lmagan e'lon rasmi faqat to'g'ri kalit bilan beriladi (egasi va admin uchun)
+  const isPublic = PUBLIC_STATUSES.includes(l.status);
+  if (!isPublic && url.searchParams.get("k") !== (await mediaKey(env, id))) return new Response("Topilmadi", { status: 404 });
   const m = l.media[idx];
+  // Videoning thumbnail'i bo'lmasa, butun videoni "rasm" deb yubormaymiz
+  if (thumb && m.type === "video" && !m.thumb) return new Response("Topilmadi", { status: 404 });
   const isVideo = m.type === "video" && !thumb;
+
+  // Rasmlar Cloudflare keshida saqlanadi: keyingi ko'rishlarda Telegram'ga umuman murojaat qilinmaydi.
+  // (Faqat ochiq e'lonlar; kalit kesh manziliga kirmaydi — tekshiruv yuqorida bo'ldi.)
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  const cacheKey = new Request(`${url.origin}/__media/${id}/${idx}/${thumb ? "t" : "f"}/${m.file_id.slice(-16)}`);
+  if (cache && !isVideo && isPublic) {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+  }
+
   const fileId = thumb ? m.thumb || m.file_id : m.file_id;
-  let f;
+  let path;
   try {
-    f = await tg(env, "getFile", { file_id: fileId });
+    path = await telegramFilePath(env, fileId);
   } catch {
     return new Response("Fayl katta yoki topilmadi", { status: 404 });
   }
@@ -958,21 +1186,27 @@ async function apiMedia(env, request, id, idx, thumb) {
   const range = request.headers.get("range");
   if (isVideo && range) headers.range = range;
   const base = env.TG_API || "https://api.telegram.org";
-  const up = await fetch(`${base}/file/bot${env.BOT_TOKEN}/${f.file_path}`, { headers });
-  if (!up.ok) return new Response("Topilmadi", { status: 404 });
+  const up = await fetch(`${base}/file/bot${env.BOT_TOKEN}/${path}`, { headers });
+  if (!up.ok) {
+    filePathMemo.delete(fileId);
+    return new Response("Topilmadi", { status: 404 });
+  }
   const h = new Headers({
     "content-type": isVideo ? "video/mp4" : "image/jpeg",
-    "cache-control": "public, max-age=604800",
+    // yopiq e'lon rasmi umumiy keshlarda saqlanmasin
+    "cache-control": isPublic ? "public, max-age=604800" : "private, max-age=3600",
   });
   for (const k of ["content-length", "content-range", "accept-ranges"]) if (up.headers.get(k)) h.set(k, up.headers.get(k));
-  return new Response(up.body, { status: up.status, headers: h });
+  const res = new Response(up.body, { status: up.status, headers: h });
+  if (cache && !isVideo && isPublic && up.status === 200) ctx.waitUntil(cache.put(cacheKey, res.clone()).catch(() => {}));
+  return res;
 }
 
 async function apiMy(env, request) {
   const user = await authUser(env, request.headers.get("x-init-data"));
   if (!user) return err("Ilovani bot orqali oching.", 401);
   const { results } = await env.DB.prepare("SELECT * FROM listings WHERE user_id=? ORDER BY id DESC LIMIT 50").bind(user.id).all();
-  return json({ items: results.map((r) => card(parseRow(r))) });
+  return json({ items: await Promise.all(results.map((r) => privateCard(env, parseRow(r)))) });
 }
 
 async function apiClose(env, request, id) {
@@ -997,12 +1231,14 @@ async function apiSubmit(env, request) {
   const user = await authUser(env, String(form.get("initData") || ""));
   if (!user) return err("Ilovani bot ichidagi tugma orqali oching.", 401);
   await upsertUser(env, user);
-  const banned = await env.DB.prepare("SELECT banned FROM users WHERE id=?").bind(user.id).first("banned");
-  if (banned) return err("Sizga e'lon berish cheklangan.", 403);
+  if (await isBanned(env, user.id)) return err("Sizga e'lon berish cheklangan.", 403);
 
   const res = cleanForm(form);
   if (typeof res === "string") return err(res);
   const { kind, region, district, data } = res;
+  // Postda ko'rsatiladigan username — foydalanuvchi formaga yozgani (Telegram profilidagi emas)
+  const contactUsername = data.contact_username;
+  delete data.contact_username;
 
   const since = now() - 86400;
   if (kind === "hadya") {
@@ -1026,7 +1262,7 @@ async function apiSubmit(env, request) {
 
   const ins = await env.DB.prepare(
     "INSERT INTO listings (user_id, username, first_name, kind, region, district, data, created_at) VALUES (?,?,?,?,?,?,?,?)"
-  ).bind(user.id, user.username || null, user.first_name || null, kind, region, district, JSON.stringify(data), now()).run();
+  ).bind(user.id, contactUsername, user.first_name || null, kind, region, district, JSON.stringify(data), now()).run();
   const id = ins.meta.last_row_id;
 
   try {
@@ -1050,6 +1286,8 @@ const ADMIN_COMMANDS = [
   { command: "karta", description: "To'lov kartasini o'zgartirish" },
   { command: "berilgan", description: "Berilgan eski postlarni statistikaga kiritish" },
   { command: "oddiy", description: "Oddiy rejimga qaytish" },
+  { command: "ban", description: "Foydalanuvchini bloklash: /ban ID yoki @username" },
+  { command: "unban", description: "Blokdan chiqarish" },
 ];
 
 async function apiMe(env, request) {
@@ -1079,10 +1317,10 @@ async function apiAdminOverview(env, request) {
     settings: {
       price: await getPrice(env), card: await getSetting(env, "card", ""), card_owner: await getSetting(env, "card_owner", ""),
     },
-    queue: queue.map((r) => {
+    queue: await Promise.all(queue.map(async (r) => {
       const l = parseRow(r);
-      return { ...card(l), user: l.username ? "@" + l.username : l.first_name || "", hours: Math.floor((now() - l.created_at) / 3600) };
-    }),
+      return { ...(await privateCard(env, l)), user: l.username ? "@" + l.username : l.first_name || "", hours: Math.floor((now() - l.created_at) / 3600) };
+    })),
     ai_on: !!env.OPENAI_API_KEY,
   });
 }
@@ -1110,6 +1348,7 @@ async function apiAsk(env, request) {
   const user = await authUser(env, request.headers.get("x-init-data"));
   if (!user) return err("Ilovani bot orqali oching.", 401);
   if (!env.OPENAI_API_KEY) return err("AI bo'limi hali ulanmagan. Keyinroq urinib ko'ring.", 503);
+  if (await isBanned(env, user.id)) return err("Sizga bu bo'lim cheklangan.", 403);
   const b = await request.json().catch(() => ({}));
   const question = String(b.question || "").trim().slice(0, 500);
   if (question.length < 3) return err("Savolni yozing.");
@@ -1180,9 +1419,8 @@ async function setup(env, origin) {
   if (out.length) return setupPage(out);
 
   try {
-    schemaReady = false;
-    await ensureSchema(env);
-    await env.DB.prepare("SELECT admin_msgs, pay_msgs FROM listings LIMIT 1").all();
+    await ensureSchema(env, true);
+    await env.DB.prepare("SELECT admin_msgs, pay_msgs, check_at FROM listings LIMIT 1").all();
     ok("Baza jadvallari tayyor");
   } catch (e) {
     bad("Bazani tayyorlab bo'lmadi: " + e.message);
@@ -1202,7 +1440,8 @@ async function setup(env, origin) {
   try {
     await tg(env, "setWebhook", {
       url: origin + "/tg", secret_token: await webhookSecret(env),
-      allowed_updates: ["message", "callback_query", "channel_post"], drop_pending_updates: true,
+      // drop_pending_updates: false — navbatda turgan xabarlar o'chib ketmasin
+      allowed_updates: ["message", "callback_query", "channel_post"], drop_pending_updates: false,
     });
     ok("Bot shu serverga ulandi (webhook)");
   } catch (e) {
@@ -1253,16 +1492,126 @@ li{background:#fff;border-radius:12px;padding:12px 14px;margin:8px 0;list-style:
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
-// ---------------------------------------------------------------- fon vazifasi (har soatda)
+// /setup kalitini tekshirish. Ikkala qiymatning SHA-256 xeshi solishtiriladi — shunda javob vaqtiga
+// qarab kalitni harfma-harf taxmin qilib bo'lmaydi.
+async function setupKeyOk(env, given) {
+  if (!env.SETUP_KEY || !given) return false;
+  const h = async (s) => hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s))));
+  return (await h(given)) === (await h(env.SETUP_KEY));
+}
+const setupLocked = (env) => setupPage([["bad", env.SETUP_KEY
+  ? "Kalit noto'g'ri. Manzilni shunday oching: /setup?key=SIZNING_KALITINGIZ"
+  : "Xavfsizlik uchun avval Cloudflare'da SETUP_KEY (Secret) qo'shing: Worker → Settings → Variables and Secrets. " +
+    "Qiymati — o'zingiz o'ylab topgan uzun so'z (masalan 20+ tasodifiy harf/raqam). Keyin /setup?key=SHU_SOZ ni oching."]]);
+
+// ---------------------------------------------------------------- fon vazifalari (cron, har soatda)
+const sendTo = (env, chatId, text, extra = {}) => tgSafe(env, "sendMessage", { chat_id: chatId, text, ...extra });
+
 async function expirePayments(env) {
   const { results } = await env.DB.prepare("SELECT id, user_id FROM listings WHERE status=? AND pay_deadline<?")
     .bind(S.AWAIT_PAY, now()).all();
   for (const l of results) {
     if (await changeStatus(env, l.id, S.AWAIT_PAY, S.EXPIRED)) {
-      await tgSafe(env, "sendMessage", {
-        chat_id: l.user_id,
-        text: `⌛️ E'lon #${l.id} uchun to'lov muddati o'tdi, e'lon bekor qilindi. Kerak bo'lsa, qayta yuboring.`,
-      });
+      await sendTo(env, l.user_id, `⌛️ E'lon #${l.id} uchun to'lov muddati o'tdi, e'lon bekor qilindi. Kerak bo'lsa, qayta yuboring.`);
+    }
+  }
+}
+
+// To'lov muddati tugashiga PAY_REMIND_HOURS qolganda bir marta eslatish
+async function remindPayments(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, user_id, price_due, pay_deadline FROM listings WHERE status=? AND pay_deadline<? AND pay_reminded IS NULL"
+  ).bind(S.AWAIT_PAY, now() + PAY_REMIND_HOURS * 3600).all();
+  const card = await getSetting(env, "card", "");
+  const owner = await getSetting(env, "card_owner", "");
+  for (const l of results) {
+    await updateListing(env, l.id, { pay_reminded: now() });
+    const left = Math.max(1, Math.round((l.pay_deadline - now()) / 3600));
+    await sendTo(env, l.user_id,
+      `⏰ Eslatma: e'lon #${l.id} uchun to'lov muddati tugashiga ${left} soat qoldi.\n\n` +
+      `Summa: <b>${fmtSum(l.price_due || (await getPrice(env)))}</b>\nKarta: <code>${esc(card)}</code>\n${esc(owner)}\n\n` +
+      "To'lovni qilib, chek rasmini shu botga yuboring.", { parse_mode: "HTML" });
+  }
+}
+
+// Admin uzoq vaqt ko'rmagan e'lonlar haqida eslatma (har ADMIN_REMIND_HOURS soatda ko'pi bilan bir marta)
+async function remindAdmins(env) {
+  const last = Number(await getSetting(env, "admin_reminded", 0));
+  if (now() - last < ADMIN_REMIND_HOURS * 3600 - 300) return;
+  const old = now() - ADMIN_REMIND_HOURS * 3600;
+  const [pending, pay] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) AS n FROM listings WHERE status=? AND created_at<?").bind(S.PENDING, old).first("n"),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM listings WHERE status=?").bind(S.PAY_REVIEW).first("n"),
+  ]);
+  if (!pending && !pay) return;
+  await setSetting(env, "admin_reminded", now());
+  const lines = ["⏰ <b>Ko'rib chiqilmagan e'lonlar bor</b>"];
+  if (pending) lines.push(`• ${pending} ta e'lon ${ADMIN_REMIND_HOURS} soatdan ko'p tekshiruv kutmoqda`);
+  if (pay) lines.push(`• ${pay} ta to'lov cheki tekshirilmagan`);
+  lines.push("", "Tugmalar avvalgi xabarlarda. Ro'yxat: /admin");
+  for (const admin of adminIds(env)) await sendTo(env, admin, lines.join("\n"), { parse_mode: "HTML" });
+}
+
+// 30 kunlik tekshiruv: egasidan «Hali dolzarbmi?» deb so'raladi; ANSWER_DAYS ichida javob bo'lmasa
+// e'lon «Dolzarb emas» deb yopiladi (kanaldagi post ham yangilanadi). Kanaldan import qilingan
+// postlarning egasi botda yo'q (user_id = 0), ular bu tekshiruvga kirmaydi.
+const stillKb = (l) => ({
+  inline_keyboard: [
+    [{ text: "👍 Ha, hali dolzarb", callback_data: `u:keep:${l.id}` }],
+    [
+      ...(l.kind === "hadya" ? [{ text: "✅ Berildi", callback_data: `u:given:${l.id}` }] : []),
+      ...(l.kind === "sotuv" ? [{ text: "✅ Sotildi", callback_data: `u:sold:${l.id}` }] : []),
+      { text: "⛔️ Dolzarb emas", callback_data: `u:closed:${l.id}` },
+    ],
+  ],
+});
+async function checkStale(env) {
+  // 1) Javob bermaganlarni yopish
+  const { results: overdue } = await env.DB.prepare(
+    // LIMIT: Cloudflare bitta ishga tushishda tashqi so'rovlar sonini cheklaydi; qolganlari keyingi soatda
+    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NOT NULL AND asked_at<? LIMIT 10"
+  ).bind(S.PUBLISHED, now() - ANSWER_DAYS * DAY).all();
+  for (const r of overdue) {
+    const l = parseRow(r);
+    if (await closeListing(env, l, "closed")) {
+      await sendTo(env, l.user_id,
+        `⛔️ E'lon #${l.id} (${shortTitle(l)}) ${ANSWER_DAYS} kun javob bo'lmagani uchun «Dolzarb emas» deb yopildi.\n` +
+        "Agar mushuk hali uy izlayotgan bo'lsa, ilova orqali yangi e'lon bering.");
+    }
+  }
+  // 2) Muddati kelganlardan so'rash (check_at bo'sh bo'lsa — eski e'lon, joylangan vaqtdan 30 kun hisoblanadi)
+  const { results: due } = await env.DB.prepare(
+    "SELECT * FROM listings WHERE status=? AND user_id<>0 AND asked_at IS NULL " +
+    "AND COALESCE(check_at, published_at + ?) < ? LIMIT 15"
+  ).bind(S.PUBLISHED, CHECK_DAYS * DAY, now()).all();
+  for (const r of due) {
+    const l = parseRow(r);
+    await updateListing(env, l.id, { asked_at: now() });
+    const link = l.channel_username ? `\nhttps://t.me/${l.channel_username}/${l.channel_msg_id}` : "";
+    await sendTo(env, l.user_id,
+      `🐾 E'loningiz #${l.id} (${shortTitle(l)}, ${placeText(l)}) ${CHECK_DAYS} kundan beri kanalda turibdi.${link}\n\n` +
+      `Hali dolzarbmi? ${ANSWER_DAYS} kun ichida javob bo'lmasa, e'lon «Dolzarb emas» deb yopiladi.`,
+      { reply_markup: stillKb(l), disable_web_page_preview: true });
+  }
+}
+
+// Vaqtinchalik sozlamalarni tozalash: albom bog'lanishi (mg:), chek tanlovi (rcpt:), tugagan
+// «berilganlar rejimi» (done:). Ular faqat bir necha daqiqa kerak, keyin bazada keraksiz yotadi.
+async function cleanupSettings(env) {
+  await env.DB.prepare(
+    "DELETE FROM settings WHERE (key LIKE 'mg:%' OR key LIKE 'rcpt:%') AND COALESCE(updated_at, 0) < ?"
+  ).bind(now() - TEMP_KEEP_DAYS * DAY).run();
+  await env.DB.prepare("DELETE FROM settings WHERE key LIKE 'done:%' AND CAST(value AS INTEGER) < ?").bind(now()).run();
+}
+
+async function hourly(env) {
+  // Har bir vazifa alohida: bittasi xato bersa, qolganlari baribir bajariladi
+  for (const [name, job] of [["to'lov muddati", expirePayments], ["to'lov eslatmasi", remindPayments],
+    ["admin eslatmasi", remindAdmins], ["30 kunlik tekshiruv", checkStale], ["tozalash", cleanupSettings]]) {
+    try {
+      await job(env);
+    } catch (e) {
+      console.log(`Cron (${name}):`, e.stack || e.message);
     }
   }
 }
@@ -1295,7 +1644,10 @@ export default {
       if (method === "GET" && path === "/") {
         return new Response(INDEX_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" } });
       }
-      if (method === "GET" && path === "/setup") return await setup(env, origin);
+      if (method === "GET" && path === "/setup") {
+        if (!(await setupKeyOk(env, url.searchParams.get("key")))) return setupLocked(env);
+        return await setup(env, origin);
+      }
       if (method === "GET" && path === "/regions.json") {
         return new Response(JSON.stringify(REGIONS), {
           headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=86400" },
@@ -1304,7 +1656,8 @@ export default {
       if (method === "GET" && path === "/api/config") {
         const price = await getPrice(env);
         return json({ price, price_text: fmtSum(price), channel: env.CHANNEL || "", free_per_day: FREE_PER_DAY,
-          admin: String(env.ADMIN_CONTACT || "").replace(/^@/, "") });
+          admin: String(env.ADMIN_CONTACT || "").replace(/^@/, ""), bot: await botUsername(env).catch(() => ""),
+          report_reasons: REPORT_REASONS });
       }
       if (method === "GET" && path === "/api/listings") return await apiListings(env, url);
       if (method === "GET" && path === "/api/stats") return json(await stats(env));
@@ -1315,20 +1668,21 @@ export default {
       if (method === "POST" && path === "/api/admin/settings") return await apiAdminSettings(env, request);
       if (method === "POST" && path === "/api/submit") return await apiSubmit(env, request);
       let m;
-      if (method === "GET" && (m = path.match(/^\/api\/listings\/(\d+)$/))) return await apiDetail(env, +m[1]);
+      if (method === "GET" && (m = path.match(/^\/api\/listings\/(\d+)$/))) return await apiDetail(env, request, +m[1]);
+      if (method === "POST" && (m = path.match(/^\/api\/listings\/(\d+)\/report$/))) return await apiReport(env, request, +m[1]);
       if (method === "GET" && (m = path.match(/^\/api\/media\/(\d+)\/(\d+)$/)))
-        return await apiMedia(env, request, +m[1], +m[2], url.searchParams.get("thumb") === "1");
+        return await apiMedia(env, request, ctx, url, +m[1], +m[2]);
       if (method === "POST" && (m = path.match(/^\/api\/my\/(\d+)\/close$/))) return await apiClose(env, request, +m[1]);
       return new Response("Topilmadi", { status: 404 });
     } catch (e) {
       console.log("Xato:", e.stack || e.message);
-      if (String(e.message).includes("no such table")) return err("Bot hali sozlanmagan: /setup sahifasini oching.", 503);
+      if (String(e.message).includes("no such table")) return err("Bot hali sozlanmagan: /setup?key=... sahifasini oching.", 503);
       return err("Server xatosi. Birozdan keyin qayta urinib ko'ring.", 500);
     }
   },
 
   async scheduled(event, env, ctx) {
     await ensureSchema(env);
-    ctx.waitUntil(expirePayments(env));
+    ctx.waitUntil(hourly(env));
   },
 };

@@ -156,6 +156,12 @@ nav button.on{background:var(--lemon);color:var(--ink)}
 .field textarea{resize:none;min-height:76px}
 .err{color:var(--danger);font-size:13px;font-weight:600;margin-top:6px;display:none}.bad .err{display:block}
 .count{font-size:12px;color:var(--muted);text-align:right}
+.contact-err:not(.bad){display:none}
+#f-username{border-bottom:0}#f-either{border-top:1.5px solid var(--line)}
+.report{background:none;border:0;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;display:block;margin:4px auto 14px;padding:6px}
+.report-box{background:var(--white);border:2px solid var(--ink);border-radius:16px;padding:12px 14px;margin-bottom:14px}
+.report-box .chips{flex-direction:column;align-items:stretch}
+.report-box textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:8px;margin-top:10px;font-size:15px;resize:none;min-height:60px}
 #fallbackSubmit{margin-top:6px}
 
 /* --- mening e'lonlarim --- */
@@ -303,8 +309,15 @@ nav button.on{background:var(--lemon);color:var(--ink)}
     <div class="group">
       <div class="field" id="f-region"><label class="lbl" for="region">Hudud</label><select id="region"><option value="">Tanlang…</option></select><div class="err">Hududni tanlang.</div></div>
       <div class="field" id="f-district"><label class="lbl" for="district">Tuman / shahar</label><select id="district" disabled><option value="">Avval hududni tanlang</option></select><div class="err">Tanlang.</div></div>
-      <div class="field" id="f-phone"><label class="lbl" for="phone">Telefon</label><input id="phone" type="tel" inputmode="tel" value="+998 " maxlength="20"><div class="err">+998 XX XXX XX XX ko'rinishida yozing.</div></div>
       <div class="field"><label class="lbl" for="extra">Qo'shimcha ma'lumot</label><textarea id="extra" maxlength="400" placeholder="Xarakteri, sharti va boshqalar"></textarea><div class="count"><span id="cnt">0</span>/<span id="cntMax">400</span></div></div>
+    </div>
+
+    <h2 style="margin-top:4px">Bog'lanish</h2>
+    <p class="hint" style="margin:-6px 0 10px">Telefon yoki Telegram — kamida bittasini yozing. Ikkalasi ham bo'lishi mumkin.</p>
+    <div class="group" id="f-contact">
+      <div class="field" id="f-phone"><label class="lbl" for="phone">Telefon (ixtiyoriy)</label><input id="phone" type="tel" inputmode="tel" value="+998 " maxlength="20" autocomplete="tel"><div class="err">+998 XX XXX XX XX ko'rinishida yozing yoki bo'sh qoldiring.</div></div>
+      <div class="field" id="f-username"><label class="lbl" for="tg_username">Telegram username (ixtiyoriy)</label><input id="tg_username" maxlength="40" placeholder="@username" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="err">Masalan: @ism_familiya — 5–32 ta lotin harf, raqam yoki _.</div></div>
+      <div class="field contact-err" id="f-either"><div class="err" style="margin-top:0">Telefon raqam yoki Telegram username'dan kamida bittasini yozing.</div></div>
     </div>
     <button class="btn" id="fallbackSubmit" hidden>E'lonni yuborish</button>
   </div>
@@ -356,6 +369,8 @@ nav button.on{background:var(--lemon);color:var(--ink)}
     <h2>Bot buyruqlari</h2>
     <div><code>/berilgan</code> — eski berilgan postlarni statistikaga kiritish rejimi</div>
     <div><code>/oddiy</code> — rejimni o'chirish</div>
+    <div><code>/ban 123456789</code> yoki <code>/ban @username</code> — foydalanuvchini bloklash</div>
+    <div><code>/unban 123456789</code> — blokdan chiqarish</div>
     <div>Kanaldagi postni ilovaga qo'shish uchun uni botga forward qiling.</div>
     <div>E'lon va cheklarni bot chatidagi tugmalar orqali tasdiqlaysiz.</div>
   </div>
@@ -383,6 +398,7 @@ const ICON = {
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l4-4"/></svg>',
   warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
   ext: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg>',
+  share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
 };
 let REGIONS = [], CONFIG = {price_text:"7 000 so'm"}, current = "search";
 
@@ -471,10 +487,15 @@ async function openDetail(id) {
       : j.contact.phone ? `<a class="btn" href="tel:${j.contact.phone.replace(/\s/g, "")}">${ICON.phone}${esc(j.contact.phone)}</a>` : "";
     actions += `<div class="ctas">${j.contact.username ? call : ""}${write}</div>`;
     if (j.contact.phone && j.contact.username) actions += `<p class="sub" style="text-align:center;margin:0 0 12px">Telefon: ${esc(j.contact.phone)}</p>`;
+  } else if (j.status === "published") {
+    // Kontaktlar faqat Telegram ichida ko'rinadi (raqamlarni skript bilan yig'ib bo'lmasin)
+    actions += `<div class="note-box">${j.contact_hidden ? "Egasining kontaktini ko'rish uchun ilovani Telegram'dagi bot orqali oching" : "Kontakt uchun kanaldagi postni ko'ring"}</div>`;
   } else {
     actions += `<div class="note-box">${j.status === "given" ? "Bu mushuk yangi uyini topdi" : j.status === "sold" ? "Sotilgan" : "E'lon dolzarb emas"}</div>`;
   }
+  if (CONFIG.bot && j.status === "published") actions += `<button class="btn ghost" id="dShare">${ICON.share}Do'stlarga ulashish</button>`;
   if (j.post) actions += `<button class="btn ghost" id="dPost">${ICON.ext}Kanalda ko'rish</button>`;
+  if (inTg && j.status === "published" && !j.mine) actions += `<button class="report" id="dReport">🚩 Shikoyat qilish</button><div id="reportBox"></div>`;
   $("#detail").innerHTML = `
     <div class="dtop"><button class="round" id="dBack" aria-label="Orqaga">${ICON.back}</button><span class="eyebrow">${TAG[j.kind]}</span><span style="width:44px"></span></div>
     <div class="gallery" id="gal">${gal}</div>${dots}
@@ -489,12 +510,39 @@ async function openDetail(id) {
   $("#dBack").onclick = () => show("search");
   if ($("#dWrite")) $("#dWrite").onclick = () => openTg("https://t.me/" + j.contact.username);
   if ($("#dPost")) $("#dPost").onclick = () => openTg(j.post);
+  if ($("#dShare")) $("#dShare").onclick = () => {
+    // Havola botni ochadi, bot esa shu e'lonni ilovada ochadigan tugma beradi
+    const link = `https://t.me/${CONFIG.bot}?start=l${j.id}`;
+    const text = `🐾 ${KIND[j.kind]}: ${j.title} — ${place}`;
+    openTg(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
+  };
+  if ($("#dReport")) $("#dReport").onclick = () => showReport(j.id);
   const g = $("#gal");
   if (media.length > 1) g.onscroll = () => {
     const i = Math.round(g.scrollLeft / g.clientWidth);
     $$(".dots i").forEach((d, k) => d.classList.toggle("on", k === i));
   };
   show("detail");
+}
+
+/* ---------- shikoyat ---------- */
+function showReport(id) {
+  const box = $("#reportBox");
+  if (box.innerHTML) { box.innerHTML = ""; return; }
+  const reasons = Object.entries(CONFIG.report_reasons || {other: "Boshqa sabab"});
+  box.innerHTML = `<div class="report-box"><span class="lbl">Shikoyat sababi</span><div class="chips">
+    ${reasons.map(([k, t], i) => `<input type="radio" name="rr" id="rr-${k}" value="${k}"${i ? "" : " checked"}><label for="rr-${k}">${esc(t)}</label>`).join("")}
+    </div><textarea id="rNote" maxlength="300" placeholder="Izoh (ixtiyoriy)"></textarea>
+    <button class="btn" id="rSend" style="margin:10px 0 0">Adminga yuborish</button></div>`;
+  box.scrollIntoView({behavior: "smooth", block: "center"});
+  $("#rSend").onclick = async () => {
+    $("#rSend").disabled = true;
+    const r = await api(`api/listings/${id}/report`, {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({reason: val("rr"), note: $("#rNote").value})});
+    $("#rSend").disabled = false;
+    if (r.ok) { haptic("success"); box.innerHTML = ""; $("#dReport").hidden = true; say("Shikoyatingiz adminga yuborildi. Rahmat!"); }
+    else say(r.error || "Xatolik yuz berdi.");
+  };
 }
 
 /* ---------- e'lon berish ---------- */
@@ -559,6 +607,17 @@ $$("#stepForm input, #stepForm select, #stepForm textarea").forEach(el =>
   el.addEventListener("input", () => el.closest(".field")?.classList.remove("bad")));
 
 const val = n => $(`input[name="${n}"]:checked`)?.value || "";
+// "+998 " yolg'iz qolsa — telefon kiritilmagan hisoblanadi
+const phoneDigits = () => { const d = $("#phone").value.replace(/\D/g, ""); return d === "998" ? "" : d; };
+// "" — kiritilmagan, false — noto'g'ri, aks holda @ belgisisiz username (t.me/... havolasi ham bo'ladi)
+function cleanUser() {
+  const s = $("#tg_username").value.trim().replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i, "").replace(/^@/, "");
+  if (!s) return "";
+  return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(s) ? s : false;
+}
+// Telegram profilida username bo'lsa, maydonga oldindan yozib qo'yiladi (foydalanuvchi o'chirishi mumkin)
+const myUsername = () => tg?.initDataUnsafe?.user?.username ? "@" + tg.initDataUnsafe.user.username : "";
+["#phone", "#tg_username"].forEach(s => $(s).addEventListener("input", () => $("#f-either").classList.remove("bad")));
 function validate() {
   $$("#stepForm .bad, #f-media.bad").forEach(e => e.classList.remove("bad"));
   const bad = [], need = (ok, id) => { if (!ok) bad.push(id); };
@@ -569,7 +628,11 @@ function validate() {
     if (kind === "sotuv") need(+$("#price").value.replace(/\D/g, "") >= 1000, "f-price");
   }
   need($("#region").value, "f-region"); need($("#district").value, "f-district");
-  need(/^998\d{9}$/.test($("#phone").value.replace(/\D/g, "")), "f-phone");
+  // Kontakt: ikkalasi ham ixtiyoriy, lekin yozilgan bo'lsa to'g'ri bo'lsin va kamida bittasi bo'lsin
+  const phone = phoneDigits(), user = cleanUser();
+  need(!phone || /^998\d{9}$/.test(phone), "f-phone");
+  need(user !== false, "f-username");
+  if (!phone && !user && user !== false) bad.push("f-either");
   bad.forEach(id => $("#" + id).classList.add("bad"));
   if (bad.length) { $("#" + bad[0]).scrollIntoView({behavior:"smooth", block:"center"}); haptic("error"); }
   return !bad.length;
@@ -580,7 +643,7 @@ async function submit() {
   sending = true; tg?.MainButton.showProgress(); $("#fallbackSubmit").disabled = true;
   const fd = new FormData();
   fd.append("initData", tg?.initData || ""); fd.append("kind", kind);
-  ["breed", "age", "health_note", "title", "about", "region", "district", "phone", "extra"].forEach(id => fd.append(id, $("#" + id).value));
+  ["breed", "age", "health_note", "title", "about", "region", "district", "phone", "tg_username", "extra"].forEach(id => fd.append(id, $("#" + id).value));
   fd.append("price", kind === "reklama" ? $("#rprice").value : $("#price").value);
   fd.append("gender", val("gender")); fd.append("delivery", val("delivery"));
   fd.append("health", $$('input[name="health"]:checked').map(i => i.value).join(","));
@@ -596,7 +659,7 @@ function resetForm() {
   [0, 1, 2].forEach(i => setMedia(i, null));
   $$("#stepForm input:not([type=radio]):not([type=checkbox]), #stepForm textarea").forEach(e => e.value = "");
   $$("#stepForm input[type=radio], #stepForm input[type=checkbox]").forEach(e => e.checked = false);
-  $("#phone").value = "+998 "; $("#cnt").textContent = "0";
+  $("#phone").value = "+998 "; $("#tg_username").value = myUsername(); $("#cnt").textContent = "0";
   $("#region").value = ""; fillDistricts($("#district"), "", "Avval hududni tanlang");
   $("#stepForm").hidden = true; $("#stepType").hidden = false; kind = null;
 }
@@ -762,7 +825,11 @@ document.addEventListener("click", e => {
   fillRegions($("#region"), "Tanlang…");
   $$(".js-price").forEach(e => e.textContent = CONFIG.price_text);
   $$(".js-admin").forEach(e => e.hidden = !CONFIG.admin);
+  $("#tg_username").value = myUsername();
   search();
+  // Ulashilgan e'lon: bot tugmasi #l123 bilan ochadi; t.me/<bot>/<app>?startapp=l123 bo'lsa start_param keladi
+  const shared = (location.hash.match(/^#l(\d+)$/) || String(tg?.initDataUnsafe?.start_param || "").match(/^l(\d+)$/) || [])[1];
+  if (shared) openDetail(+shared);
   if (inTg) {
     const me = await api("api/me");
     if (!me.error) ME = me;
