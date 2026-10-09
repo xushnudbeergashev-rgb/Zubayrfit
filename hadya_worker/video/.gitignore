@@ -1,0 +1,4 @@
+# Yig'ilgan videolar va kadrlar — node render.mjs bilan qayta yaratiladi
+out/
+# Ilova ekranlari — node capture-app.mjs bilan qayta olinadi
+shots/

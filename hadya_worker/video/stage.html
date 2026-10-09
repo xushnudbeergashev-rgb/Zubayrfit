@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Hadyaga mushuklar — promo</title>
+<link rel="stylesheet" href="fonts/fonts.local.css">
+<style>
+:root{--blue:#2D46F0;--blue-dark:#1C30C4;--blue-soft:#DCE1FF;--lemon:#FFD84A;--ink:#12123A;--paper:#F4F1EA;--white:#fff;--muted:#6A6A8A;--ok:#1F8A5B;
+  --display:"Unbounded","Arial Black",sans-serif;--body:"Onest",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--blue)}
+body{font-family:var(--body);color:var(--white);-webkit-font-smoothing:antialiased}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--blue)}
+.abs{position:absolute}
+.layer{position:absolute;inset:0;display:none}
+/* fon */
+#bg .blob{position:absolute;border-radius:50%;filter:blur(2px)}
+#bg .paw{position:absolute;width:90px;height:90px;opacity:.10;color:#fff}
+/* sarlavha */
+#cap{position:absolute;left:70px;right:70px;top:120px;z-index:5}
+#cap .kick{display:inline-flex;align-items:center;gap:12px;background:var(--lemon);color:var(--ink);font:600 30px/1 var(--display);
+  padding:16px 26px;border-radius:40px;letter-spacing:.02em;box-shadow:0 6px 0 var(--ink)}
+#cap .kick b{background:var(--ink);color:var(--lemon);border-radius:50%;width:42px;height:42px;display:grid;place-items:center;font-size:24px}
+#cap h1{font:800 66px/1.08 var(--display);margin-top:30px;letter-spacing:-.01em}
+#cap h1 .w{display:inline-block;white-space:pre;will-change:transform}
+#cap h1 .hl{color:var(--lemon)}
+/* telefon */
+#phone{position:absolute;left:190px;top:520px;width:700px;height:1400px;border-radius:84px;background:var(--ink);padding:22px;
+  box-shadow:0 40px 80px -20px rgba(0,0,0,.55), inset 0 0 0 3px #2c2c5a;z-index:3;transform-origin:50% 0}
+#screen{position:relative;width:656px;height:1356px;border-radius:64px;overflow:hidden;background:var(--paper)}
+#screen .scr{position:absolute;left:0;top:0;width:656px;will-change:transform}
+#screen .scr img{display:block;width:656px}
+#nav{position:absolute;left:0;bottom:0;width:656px;z-index:2}
+#island{position:absolute;left:50%;top:14px;width:180px;height:48px;margin-left:-90px;background:var(--ink);border-radius:30px;z-index:3}
+#status{position:absolute;left:0;top:0;width:656px;height:76px;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:6px 52px 0 64px;
+  font:700 27px/1 var(--body)}
+#status .bat{display:flex;gap:8px;align-items:center}
+#status .bat i{display:inline-block;width:46px;height:22px;border:3px solid currentColor;border-radius:7px;position:relative}
+#status .bat i::after{content:"";position:absolute;inset:3px;width:70%;background:currentColor;border-radius:2px}
+#screen .scr{top:76px}
+#cover{position:absolute;background:var(--paper);z-index:1;display:none}
+#tap{position:absolute;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:8px solid var(--lemon);z-index:4;display:none}
+#tapdot{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(255,216,74,.85);border:4px solid var(--ink);z-index:4;display:none}
+/* belgilar (callout) */
+.pill{position:absolute;z-index:6;display:flex;align-items:center;gap:14px;background:var(--white);color:var(--ink);font:700 34px/1.15 var(--body);
+  padding:20px 28px;border-radius:26px;border:4px solid var(--ink);box-shadow:0 8px 0 var(--ink);white-space:nowrap}
+.pill.lemon{background:var(--lemon)}
+.pill .ic{width:46px;height:46px;flex:0 0 auto}
+/* o'tish */
+#wipe{position:absolute;top:-200px;left:0;width:1500px;height:2400px;background:var(--lemon);z-index:20;transform:translateX(-200%) skewX(-12deg);display:flex;align-items:center;justify-content:center}
+#wipe2{position:absolute;top:-200px;left:0;width:1500px;height:2400px;background:var(--ink);z-index:19;transform:translateX(-200%) skewX(-12deg)}
+/* hook */
+#hook .line{position:absolute;left:0;right:0;text-align:center;font:800 128px/1 var(--display);letter-spacing:-.02em}
+#hook .line span{display:inline-block;padding:6px 28px;border-radius:24px}
+#hook .hl span{background:var(--lemon);color:var(--ink);box-shadow:0 10px 0 var(--ink)}
+#hook .brand{position:absolute;left:0;right:0;top:300px;text-align:center;font:600 34px/1 var(--display);letter-spacing:.14em}
+#hook .sub{position:absolute;left:0;right:0;top:1440px;text-align:center;font:700 46px/1.3 var(--body)}
+.av{position:absolute;width:210px;height:210px;border-radius:50%;overflow:hidden;border:8px solid var(--white);box-shadow:0 18px 30px -10px rgba(0,0,0,.45)}
+.av img{width:100%;height:100%;object-fit:cover}
+/* telegram */
+.tg{position:absolute;background:#fff;color:#000;border-radius:34px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);overflow:hidden}
+.tg .who{display:flex;align-items:center;gap:18px;padding:22px 26px 10px;font:700 30px/1.2 var(--body);color:#2481cc}
+.tg .who i{width:58px;height:58px;border-radius:50%;background:var(--lemon);display:grid;place-items:center;font-style:normal;font-size:30px}
+.tg .msg{padding:6px 28px 20px;font:500 31px/1.38 var(--body);white-space:pre-line;color:#111}
+.tg .btns{display:flex;gap:10px;padding:0 16px 16px}
+.tg .btns div{flex:1;text-align:center;background:#eaf2fb;color:#2481cc;border-radius:18px;padding:20px 10px;font:700 30px/1 var(--body)}
+.tg .photo{width:100%;display:block}
+.tg .cap{padding:20px 28px 26px;font:400 29px/1.42 var(--body);white-space:pre-line;color:#111}
+.tg .cap .tag{color:#2481cc}
+.tg .meta{position:absolute;right:22px;bottom:16px;font:400 22px var(--body);color:#8a9aa9}
+.toast{position:absolute;display:flex;align-items:center;gap:20px;background:#fff;color:var(--ink);border-radius:30px;padding:24px 30px;
+  font:700 32px/1.25 var(--body);box-shadow:0 24px 50px -16px rgba(0,0,0,.55);z-index:8;border:4px solid var(--ink)}
+.toast i{font-style:normal;font-size:48px}
+/* xavfsizlik */
+.tile{position:absolute;width:445px;height:420px;background:var(--white);color:var(--ink);border-radius:44px;border:5px solid var(--ink);box-shadow:0 12px 0 var(--ink);padding:40px 36px}
+.tile .ic{width:110px;height:110px;border-radius:32px;display:grid;place-items:center;border:4px solid var(--ink);margin-bottom:30px}
+.tile .ic svg{width:60px;height:60px}
+.tile b{display:block;font:800 40px/1.12 var(--display);margin-bottom:14px}
+.tile span{font:600 30px/1.3 var(--body);color:var(--muted)}
+.warnbar{position:absolute;left:70px;right:70px;top:1560px;background:#FFF1C2;color:var(--ink);border:5px solid var(--ink);border-radius:36px;padding:30px 34px;
+  font:700 36px/1.3 var(--body);display:flex;gap:22px;align-items:center;box-shadow:0 10px 0 var(--ink)}
+/* cta */
+#cta .big{position:absolute;left:50px;right:50px;text-align:center;font:800 94px/1.04 var(--display);letter-spacing:-.02em}
+#cta .search{position:absolute;left:90px;right:90px;top:880px;height:130px;background:#fff;border-radius:70px;border:5px solid var(--ink);box-shadow:0 10px 0 var(--ink);
+  display:flex;align-items:center;gap:22px;padding:0 40px;color:var(--ink);font:700 50px/1 var(--body)}
+#cta .search svg{width:56px;height:56px;flex:0 0 auto;color:var(--muted)}
+#cta .caret{display:inline-block;width:5px;height:58px;background:var(--blue);margin-left:4px;vertical-align:middle}
+#cta .btn{position:absolute;left:150px;right:150px;top:1090px;height:150px;background:var(--lemon);color:var(--ink);border:5px solid var(--ink);border-radius:44px;
+  box-shadow:0 12px 0 var(--ink);display:flex;align-items:center;justify-content:center;gap:18px;font:800 50px/1 var(--display)}
+#cta .chan{position:absolute;left:0;right:0;top:1320px;text-align:center;font:700 44px/1.3 var(--body)}
+#cta .chan b{color:var(--lemon)}
+.sticker{position:absolute;width:250px;height:250px;border-radius:50%;background:var(--lemon);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 10px 0 var(--ink);border:5px solid var(--ink);text-align:center}
+.sticker b{font:800 60px/1 var(--display)}
+.sticker span{font:700 28px/1.15 var(--body);margin-top:6px}
+.confetti{position:absolute;width:22px;height:34px;border-radius:6px;z-index:9}
+.demo{position:absolute;right:26px;bottom:22px;font:600 22px var(--body);color:rgba(255,255,255,.55);z-index:30}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg" class="abs" style="inset:0"></div>
+
+  <!-- 1. Hook -->
+  <div class="layer" id="hook">
+    <div class="brand">🐾 HADYAGA MUSHUKLAR</div>
+    <div class="line" style="top:620px"><span>Mushukka</span></div>
+    <div class="line hl" style="top:800px"><span>yangi uy</span></div>
+    <div class="line" style="top:980px"><span>kerakmi?</span></div>
+    <div class="sub">Yoki o'zingizga<br>do'st izlayapsizmi?</div>
+  </div>
+
+  <!-- 5. Tekshiruv va kanal -->
+  <div class="layer" id="publish">
+    <div class="tg" id="admMsg" style="left:70px;right:70px;top:480px">
+      <div class="who"><i>🤖</i>Hadyaga mushuklar bot</div>
+      <div class="msg" id="admText"></div>
+      <div class="btns" id="admBtns"><div id="okBtn">✅ Tasdiqlash</div><div>❌ Rad etish</div></div>
+    </div>
+    <div class="tg" id="post" style="left:150px;right:150px;top:860px">
+      <div class="who"><i>🐱</i>Hadyaga mushuklar</div>
+      <img class="photo" src="cats/1.jpg" style="height:520px;object-fit:cover">
+      <div class="cap"><span class="tag">#hadyaga</span>
+
+🦁 Zoti: Oddiy
+🐈 Yoshi: 2 oylik
+😺 Jinsi: Urg'ochi
+🏥 Sogʻligʻi: Sog'lom, Emlangan
+🏠 Manzil: <span class="tag">#Toshkent_shahri #Chilonzor</span>
+🚗 Dostafka: Bor
+💰 Narxi: Bepul</div>
+    </div>
+    <div class="toast" id="toast" style="left:110px;right:110px;top:1700px"><i>🎉</i><span>E'loningiz kanalga joylandi!<br><small style="font-weight:500;color:var(--muted)">Bot sizga darhol xabar beradi</small></span></div>
+  </div>
+
+  <!-- 8. Xavfsizlik -->
+  <div class="layer" id="safety"></div>
+
+  <!-- 9. CTA -->
+  <div class="layer" id="cta">
+    <div class="big" id="ctaTitle" style="top:300px">Mushukingizga<br><span style="color:var(--lemon)">uy toping</span></div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span id="typed"></span><i class="caret" id="caret"></i></div>
+    <div class="btn" id="ctaBtn">E'lon berish — BEPUL</div>
+    <div class="chan">Kanal: <b>@Hadyagamushuklar</b></div>
+  </div>
+
+  <div id="cap"><div class="kick" id="kick"></div><h1 id="title"></h1></div>
+
+  <div id="phone">
+    <div id="screen">
+      <div class="scr" id="scrA"><img></div>
+      <div class="scr" id="scrB"><img></div>
+      <div id="cover"></div>
+      <img id="nav">
+      <div id="status"><span>9:41</span><span class="bat"><svg width="34" height="22" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg><i></i></span></div>
+      <div id="island"></div>
+      <div id="tap"></div><div id="tapdot"></div>
+    </div>
+  </div>
+  <div id="pills"></div>
+  <div id="fx"></div>
+  <div id="wipe2"></div><div id="wipe"></div>
+  <div class="demo" id="demo">namuna e'lonlar</div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, s, d) => clamp((t - s) / d);
+const eOut = (x) => 1 - Math.pow(1 - x, 3);
+const eInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eBack = (x) => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+const params = new URLSearchParams(location.search);
+const BOXES = window.BOXES || {};
+const K = 656 / 780; // ekran rasmi (780px) → telefon ekrani (656px)
+const SCREEN_H = 1356;
+const TOP = 76; // holat qatori balandligi: ekran rasmlari shuncha pastdan boshlanadi
+
+// ---------------------------------------------------------------- ikonkalar
+const IC = {
+  pin: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>',
+  tag: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg>',
+  send: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l4-4"/></svg>',
+  share: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
+  cam: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  phone: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  gift: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg>',
+  chat: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>',
+  check: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+  chart: '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+};
+const PAW = '<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="15.5" rx="4.6" ry="3.8"/><circle cx="6" cy="10" r="2.1"/><circle cx="18" cy="10" r="2.1"/><circle cx="9.2" cy="6" r="2"/><circle cx="14.8" cy="6" r="2"/></svg>';
+
+// ---------------------------------------------------------------- fon: suzuvchi panjalar va dog'lar
+const bg = $("#bg");
+const PAWS = Array.from({ length: 14 }, (_, i) => ({ x: (i * 173) % 1000, y: (i * 389) % 1920, r: (i * 47) % 360, s: 0.6 + ((i * 7) % 5) / 6, v: 40 + (i % 4) * 22 }));
+bg.innerHTML =
+  `<div class="blob" style="width:900px;height:900px;background:#3E57FF;left:-300px;top:-200px"></div>` +
+  `<div class="blob" style="width:700px;height:700px;background:#2336D8;right:-260px;bottom:-120px"></div>` +
+  PAWS.map(() => `<div class="paw">${PAW}</div>`).join("");
+function renderBg(t) {
+  const [b1, b2] = bg.querySelectorAll(".blob");
+  b1.style.transform = `translate(${Math.sin(t * 0.5) * 60}px, ${Math.cos(t * 0.4) * 50}px)`;
+  b2.style.transform = `translate(${Math.cos(t * 0.45) * 70}px, ${Math.sin(t * 0.35) * 60}px)`;
+  bg.querySelectorAll(".paw").forEach((el, i) => {
+    const p = PAWS[i];
+    const y = ((p.y - t * p.v) % 2100 + 2100) % 2100 - 120;
+    el.style.transform = `translate(${p.x}px, ${y}px) rotate(${p.r + t * 12}deg) scale(${p.s})`;
+  });
+}
+
+// ---------------------------------------------------------------- sarlavha (so'zma-so'z chiqadi)
+let capKey = "";
+function caption(lt, kick, num, title, out = 99) {
+  const key = kick + title;
+  if (key !== capKey) {
+    capKey = key;
+    $("#kick").innerHTML = (num ? `<b>${num}</b>` : "") + kick;
+    // *so'z* — sariq rang bilan ajratiladi
+    $("#title").innerHTML = title.split(" ").map((w) => {
+      const hl = /^\*.*\*$/.test(w);
+      return `<span class="w${hl ? " hl" : ""}">${hl ? w.slice(1, -1) : w} </span>`;
+    }).join("");
+  }
+  $("#cap").style.display = kick ? "" : "none";
+  const k = eBack(prog(lt, 0.05, 0.4));
+  $("#kick").style.transform = `translateY(${(1 - k) * -60}px) scale(${0.6 + 0.4 * k})`;
+  $("#kick").style.opacity = prog(lt, 0.05, 0.15);
+  $$("#title .w").forEach((el, i) => {
+    const p = eOut(prog(lt, 0.15 + i * 0.055, 0.45));
+    const o = 1 - prog(lt, out, 0.25);
+    el.style.transform = `translateY(${(1 - p) * 80 + (1 - o) * -40}px)`;
+    el.style.opacity = Math.min(p, o);
+  });
+}
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+// ---------------------------------------------------------------- telefon
+function phone(y = 0, scale = 1, rot = 0) {
+  $("#phone").style.display = "";
+  $("#phone").style.transform = `translateY(${y}px) rotate(${rot}deg) scale(${scale})`;
+}
+function phoneEnter(lt, enter) {
+  if (!enter) return phone();
+  const p = eOut(prog(lt, 0, 0.7));
+  phone((1 - p) * 1500, 1, (1 - p) * 8);
+}
+// Ekranlar: [{ src, scroll (ekran rasmi pikselida), x (0..1 — ekran kengligiga nisbatan siljish) }]
+function screens(list, nav) {
+  ["#scrA", "#scrB"].forEach((id, i) => {
+    const el = $(id), s = list[i];
+    el.style.display = s ? "" : "none";
+    if (!s) return;
+    const img = el.querySelector("img");
+    if (!img.src.endsWith(s.src)) img.src = s.src;
+    el.style.transform = `translate(${(s.x || 0) * 656}px, ${-(s.scroll || 0) * K}px)`;
+  });
+  // holat qatori rangi asosiy ko'rinib turgan ekranga mos (ko'k yoki krem)
+  const main = list.reduce((a, b) => (Math.abs(b.x || 0) < Math.abs(a.x || 0) ? b : a));
+  const blue = /home|detail/.test(main.src);
+  $("#status").style.background = blue ? "var(--blue)" : "var(--paper)";
+  $("#status").style.color = blue ? "#fff" : "var(--ink)";
+  const n = $("#nav");
+  n.style.display = nav ? "" : "none";
+  if (nav && !n.src.endsWith(nav)) n.src = nav;
+}
+// Ikki ekran orasida gorizontal o'tish
+function swap(lt, at, a, b, nav, dur = 0.45) {
+  const p = eInOut(prog(lt, at, dur));
+  if (p <= 0) return screens([a], nav);
+  if (p >= 1) return screens([b], nav);
+  screens([{ ...a, x: -p }, { ...b, x: 1 - p }], nav);
+}
+// Bosish animatsiyasi: ekran rasmi koordinatasida (x, y — 780px tizimida), scroll hisobga olinadi
+function tap(lt, at, box, scroll) {
+  const tapEl = $("#tap"), dot = $("#tapdot");
+  const p = prog(lt, at - 0.25, 0.85);
+  const on = p > 0 && p < 1 && box;
+  tapEl.style.display = dot.style.display = on ? "" : "none";
+  if (!on) return 0;
+  const x = (box.x + box.w / 2) * K, y = (box.y + box.h / 2 - scroll) * K + TOP;
+  const ring = prog(lt, at, 0.5);
+  dot.style.left = tapEl.style.left = x + "px";
+  dot.style.top = tapEl.style.top = y + "px";
+  const press = lt < at ? eOut(prog(lt, at - 0.25, 0.25)) : 1 - prog(lt, at + 0.1, 0.25);
+  dot.style.transform = `scale(${0.6 + 0.4 * press})`;
+  dot.style.opacity = Math.min(prog(lt, at - 0.25, 0.15), 1 - prog(lt, at + 0.35, 0.25));
+  tapEl.style.transform = `scale(${0.3 + ring * 1.3})`;
+  tapEl.style.opacity = ring > 0 ? 1 - ring : 0;
+  return ring;
+}
+function cover(box, scroll, reveal) {
+  const c = $("#cover");
+  if (!box || reveal >= 1) return (c.style.display = "none");
+  c.style.display = "";
+  const top = box.y - 6 + (box.h + 12) * reveal;
+  c.style.left = (box.x - 6) * K + "px";
+  c.style.width = (box.w + 12) * K + "px";
+  c.style.top = (top - scroll) * K + TOP + "px";
+  c.style.height = (box.y + box.h + 6 - top) * K + "px";
+}
+
+// ---------------------------------------------------------------- belgilar (pill)
+let pillKey = "";
+function pills(lt, list) {
+  const key = list.map((p) => p.text).join("|");
+  const box = $("#pills");
+  if (key !== pillKey) {
+    pillKey = key;
+    box.innerHTML = list.map((p) => `<div class="pill${p.lemon ? " lemon" : ""}">${p.icon ? IC[p.icon] : ""}${p.text}</div>`).join("");
+  }
+  [...box.children].forEach((el, i) => {
+    const p = list[i];
+    const k = eBack(prog(lt, p.at, 0.45));
+    const o = 1 - prog(lt, p.out ?? 99, 0.25);
+    el.style.left = p.x + "px";
+    el.style.top = p.y + "px";
+    const float = Math.sin((lt + i) * 2.2) * 6;
+    el.style.transform = `translateY(${float}px) rotate(${p.r || 0}deg) scale(${Math.max(0, k) * o})`;
+    el.style.opacity = prog(lt, p.at, 0.1) * o;
+  });
+}
+
+// ---------------------------------------------------------------- konfetti
+const CONF = Array.from({ length: 34 }, (_, i) => ({ a: (i / 34) * Math.PI * 2 + i, v: 500 + (i * 53) % 500, c: ["#FFD84A", "#fff", "#FF8FA3", "#7BE0B0"][i % 4], r: (i * 77) % 360 }));
+function confetti(lt, at, cx, cy) {
+  const fx = $("#fx");
+  if (fx.children.length !== CONF.length) fx.innerHTML = CONF.map((c) => `<div class="confetti" style="background:${c.c}"></div>`).join("");
+  const p = lt - at;
+  [...fx.children].forEach((el, i) => {
+    const c = CONF[i];
+    if (p < 0 || p > 1.4) return (el.style.display = "none");
+    el.style.display = "";
+    const x = cx + Math.cos(c.a) * c.v * p;
+    const y = cy + Math.sin(c.a) * c.v * p * 0.8 + 900 * p * p;
+    el.style.transform = `translate(${x}px, ${y}px) rotate(${c.r + p * 720}deg)`;
+    el.style.opacity = 1 - prog(p, 1, 0.4);
+  });
+}
+
+// ---------------------------------------------------------------- sahnalar
+const SH = (n) => `shots/${n}.png`;
+const B = (shot, key) => (BOXES[shot] || {})[key];
+const S = {
+  hook(lt, d) {
+    caption(lt, "", "", "");
+    pills(lt, []);
+    const lines = $$("#hook .line");
+    lines.forEach((el, i) => {
+      // birinchi qator 0-soniyadayoq ko'rinadi (Telegram/Instagram muqovasi uchun)
+      const st = i === 0 ? -1 : 0.1 + i * 0.22;
+      const p = eBack(prog(lt, st, 0.55));
+      const dir = i % 2 ? 1 : -1;
+      el.style.transform = `translateX(${(1 - p) * 1100 * dir}px) rotate(${(1 - p) * dir * -6}deg)`;
+      el.style.opacity = prog(lt, st, 0.12);
+    });
+    const hl = $("#hook .hl span");
+    hl.style.transform = `rotate(${-3 + Math.sin(lt * 3) * 1.5}deg) scale(${1 + 0.05 * Math.sin(lt * 6) * prog(lt, 0.9, 0.3)})`;
+    $("#hook .brand").style.opacity = 1;
+    $("#hook .sub").style.opacity = prog(lt, 1.1, 0.3);
+    $("#hook .sub").style.transform = `translateY(${(1 - eOut(prog(lt, 1.1, 0.4))) * 50}px)`;
+    // atrofida mushuklar paydo bo'ladi
+    avatars(lt, "#hook", [[90, 1640, 1], [790, 1620, 3], [70, 400, 5], [810, 390, 2], [-60, 1230, 6], [930, 1200, 4]], 0.5);
+    const z = 1 + prog(lt, d - 0.4, 0.4) * 0.15;
+    $("#hook").style.transform = `scale(${z})`;
+  },
+  search(lt, d, ctx) {
+    caption(lt, "Qidirish", 1, "Hududingizdagi *mushuklarni* toping");
+    phoneEnter(lt, ctx.enter);
+    const box = B("home", "item");
+    const sc = eInOut(prog(lt, 1.3, d - 1.6)) * 1150;
+    screens([{ src: SH("home"), scroll: sc }], SH("nav-search"));
+    tap(lt, 0.95, B("home", "region"), sc);
+    pills(lt, [
+      { text: "Hudud va tuman bo'yicha", icon: "pin", x: 40, y: 1000, r: -4, at: 1.0, lemon: true },
+      { text: "Hadya · Sotuv · Reklama", icon: "tag", x: 420, y: 1300, r: 3, at: 1.5 },
+    ]);
+    void box;
+  },
+  detail(lt, d, ctx) {
+    caption(lt, "E'lon sahifasi", 2, "Rasm, ma'lumot va *egasi* bilan aloqa");
+    phoneEnter(lt, ctx.enter);
+    const target = (B("detail", "contact")?.y || 1700) - 1050;
+    const sc = eInOut(prog(lt, 0.7, 1.3)) * target;
+    swap(lt, 0, { src: SH("home"), scroll: 1150 }, { src: SH("detail"), scroll: sc }, SH("nav-search"), 0.45);
+    tap(lt, 2.3, B("detail", "contact"), sc);
+    pills(lt, [
+      { text: "Egasiga bir bosishda", icon: "phone", x: 30, y: 1060, r: -3, at: 1.9, lemon: true },
+      { text: "Do'stlarga ulashing", icon: "share", x: 470, y: 1360, r: 4, at: 2.5 },
+    ]);
+  },
+  post(lt, d, ctx) {
+    caption(lt, "E'lon berish", 3, "Hadyaga e'lon — *mutlaqo* *bepul*");
+    phoneEnter(lt, ctx.enter);
+    const scF = eInOut(prog(lt, 1.6, d - 1.9)) * ((B("form", "contact")?.y || 2495) - 1050);
+    const sw = Math.min(1.2, d * 0.3);
+    swap(lt, 0, { src: SH("detail"), scroll: 600 }, { src: SH("new-types"), scroll: 0 }, SH("nav-new"), 0.4);
+    if (lt > sw) swap(lt, sw, { src: SH("new-types"), scroll: 0 }, { src: SH("form"), scroll: scF }, SH("nav-new"), 0.4);
+    tap(lt, sw - 0.15, B("new-types", "hadya"), 0);
+    pills(lt, [
+      { text: "3 tagacha rasm yoki video", icon: "cam", x: 30, y: 1020, r: -3, at: sw + 0.4, lemon: true },
+      { text: "Telefon yoki Telegram", icon: "send", x: 400, y: 1380, r: 3, at: sw + 1.3 },
+    ]);
+  },
+  publish(lt, d) {
+    caption(lt, "Tekshiruv", 4, "Admin tasdiqlaydi — *kanalga* chiqadi");
+    const a = eBack(prog(lt, 0.1, 0.5));
+    $("#admMsg").style.transform = `translateX(${(1 - a) * -1200}px)`;
+    const okAt = 0.9;
+    const done = lt > okAt + 0.2;
+    $("#admText").textContent = done
+      ? "✅ #12 kanalga joylandi\nAdmin: Aziza"
+      : "🆕 Hadya e'lon #12 — Toshkent shahri, Chilonzor tumani\n👤 Aziza\nQaroringiz?";
+    $("#admBtns").style.display = done ? "none" : "";
+    const press = prog(lt, okAt - 0.15, 0.15) * (1 - prog(lt, okAt + 0.05, 0.15));
+    $("#okBtn").style.transform = `scale(${1 - press * 0.08})`;
+    $("#okBtn").style.background = press > 0.3 ? "#cfe3f7" : "";
+    const p = eOut(prog(lt, okAt + 0.25, 0.6));
+    $("#post").style.transform = `translateY(${(1 - p) * 1200}px) rotate(${(1 - p) * 6}deg)`;
+    const t2 = eBack(prog(lt, okAt + 1.0, 0.45));
+    $("#toast").style.transform = `translateY(${(1 - t2) * 300}px) scale(${0.7 + 0.3 * t2})`;
+    $("#toast").style.opacity = prog(lt, okAt + 1.0, 0.15);
+    confetti(lt, okAt + 1.0, 540, 1600);
+    pills(lt, []);
+  },
+  ai(lt, d, ctx) {
+    caption(lt, "AI yordamchi", 5, "Parvarish va sog'liq bo'yicha *savol* bering");
+    phoneEnter(lt, ctx.enter);
+    screens([{ src: SH("ask"), scroll: 0 }], SH("nav-ask"));
+    const box = B("ask", "answer");
+    cover(box, 0, prog(lt, 0.8, 1.4));
+    pills(lt, [
+      { text: "O'zbek tilida, 24/7", icon: "chat", x: 40, y: 1500, r: -3, at: 1.6, lemon: true },
+    ]);
+  },
+  mine(lt, d, ctx) {
+    caption(lt, "Mening e'lonlarim", 6, "Mushuk *uy* *topdimi?* Bir bosishda belgilang");
+    phoneEnter(lt, ctx.enter);
+    const at = Math.min(1.9, d * 0.55);
+    swap(lt, at, { src: SH("my"), scroll: 0 }, { src: SH("stats"), scroll: 0 }, at < lt ? SH("nav-stats") : SH("nav-my"), 0.45);
+    cover(null);
+    const r = tap(lt, 0.9, B("my", "given"), 0);
+    void r;
+    const g = B("my", "given");
+    if (g) confetti(lt, 1.0, 190 + 22 + (g.x + g.w / 2) * K, 520 + 22 + TOP + (g.y + g.h / 2) * K);
+    pills(lt, [
+      { text: "Berildi ✓", icon: "check", x: 60, y: 1130, r: -4, at: 1.0, out: at, lemon: true },
+      { text: "Statistika hammaga ochiq", icon: "chart", x: 300, y: 1450, r: 3, at: at + 0.5 },
+    ]);
+  },
+  safety(lt, d) {
+    caption(lt, "Xavfsizlik", "", "Ishonchli va *xavfsiz* e'lonlar");
+    const el = $("#safety");
+    if (!el.children.length) {
+      const tiles = [
+        ["flag", "#FFD84A", "Shikoyat tugmasi", "Firibgarlar tez chetlatiladi"],
+        ["bell", "#DCE1FF", "30 kunlik eslatma", "Eski e'lonlar o'zi yopiladi"],
+        ["shield", "#DDF3E8", "Kontakt himoyada", "Raqamlar faqat Telegram ichida"],
+        ["share", "#FFE0E6", "Ulashish", "Havolani do'stlarga yuboring"],
+      ];
+      el.innerHTML = tiles.map(([ic, c, t, s], i) =>
+        `<div class="tile" style="left:${i % 2 ? 565 : 70}px;top:${470 + Math.floor(i / 2) * 500}px"><div class="ic" style="background:${c}">${IC[ic]}</div><b>${t}</b><span>${s}</span></div>`).join("") +
+        `<div class="warnbar">${IC.warn}<span>Oldindan pul o'tkazmang — avval mushukni ko'ring</span></div>`;
+    }
+    [...el.querySelectorAll(".tile")].forEach((t, i) => {
+      const p = eBack(prog(lt, 0.3 + i * 0.18, 0.5));
+      t.style.transform = `scale(${Math.max(0, p)}) rotate(${(1 - p) * (i % 2 ? 8 : -8)}deg)`;
+      t.style.opacity = prog(lt, 0.3 + i * 0.18, 0.1);
+    });
+    const w = eOut(prog(lt, 1.3, 0.5));
+    el.querySelector(".warnbar").style.transform = `translateY(${(1 - w) * 500}px)`;
+    pills(lt, []);
+  },
+  cta(lt, d) {
+    caption(lt, "", "", "");
+    pills(lt, []);
+    const p = eBack(prog(lt, 0.05, 0.6));
+    $("#ctaTitle").style.transform = `scale(${0.4 + 0.6 * p})`;
+    $("#ctaTitle").style.opacity = prog(lt, 0.05, 0.15);
+    const s = eOut(prog(lt, 0.4, 0.4));
+    $("#cta .search").style.transform = `translateY(${(1 - s) * 300}px)`;
+    $("#cta .search").style.opacity = s;
+    const full = "@hadyaga_mushuk_bot";
+    const n = Math.round(prog(lt, 0.7, 1.0) * full.length);
+    $("#typed").textContent = full.slice(0, n);
+    $("#caret").style.opacity = Math.floor(lt * 3) % 2 ? 0 : 1;
+    const b = eBack(prog(lt, 1.5, 0.5));
+    const pulse = 1 + Math.max(0, Math.sin((lt - 2) * 6)) * 0.04 * prog(lt, 2, 0.2);
+    $("#ctaBtn").style.transform = `scale(${Math.max(0, b) * pulse})`;
+    $("#cta .chan").style.opacity = prog(lt, 1.7, 0.3);
+    avatars(lt, "#cta", [[70, 1540, 1], [435, 1620, 5], [800, 1540, 3]], 1.1);
+  },
+};
+const PHONE_SCENES = new Set(["search", "detail", "post", "ai", "mine"]);
+
+// Mushuk avatarlari (dumaloq), sakrab chiqadi va sekin tebranadi
+function avatars(lt, parent, list, start) {
+  const host = $(parent);
+  let wrap = host.querySelector(".avs");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.className = "avs";
+    wrap.innerHTML = list.map(([, , n]) => `<div class="av"><img src="cats/${n}.jpg"></div>`).join("");
+    host.append(wrap);
+  }
+  [...wrap.children].forEach((el, i) => {
+    const [x, y] = list[i];
+    const p = eBack(prog(lt, start + i * 0.1, 0.5));
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.style.transform = `scale(${Math.max(0, p)}) rotate(${Math.sin(lt * 2 + i) * 6}deg) translateY(${Math.sin(lt * 2.4 + i * 1.3) * 10}px)`;
+  });
+}
+
+// ---------------------------------------------------------------- vaqt jadvali
+const TIMELINES = {
+  30: [["hook", 0, 3], ["search", 3, 7], ["detail", 7, 10.5], ["post", 10.5, 14.5], ["publish", 14.5, 17.5],
+    ["ai", 17.5, 20.5], ["mine", 20.5, 24], ["safety", 24, 27], ["cta", 27, 30]],
+  15: [["hook", 0, 2.2], ["search", 2.2, 4.6], ["detail", 4.6, 6.8], ["post", 6.8, 9.2], ["ai", 9.2, 11.4], ["cta", 11.4, 15]],
+};
+const LEN = Number(params.get("len") || 30);
+const TL = TIMELINES[LEN];
+window.DURATION = LEN;
+window.SCENE_STARTS = TL.slice(1).map((s) => s[1]);
+
+function render(t) {
+  renderBg(t);
+  const i = Math.max(0, TL.findIndex(([, s, e]) => t >= s && t < e) === -1 ? TL.length - 1 : TL.findIndex(([, s, e]) => t >= s && t < e));
+  const [name, s, e] = TL[i];
+  const prev = TL[i - 1]?.[0];
+  $$(".layer").forEach((l) => (l.style.display = l.id === name ? "block" : "none"));
+  if (!PHONE_SCENES.has(name)) $("#phone").style.display = "none";
+  $("#tap").style.display = $("#tapdot").style.display = "none";
+  cover(null);
+  if (!["publish", "mine"].includes(name)) $("#fx").innerHTML = "";
+  S[name](t - s, e - s, { enter: !PHONE_SCENES.has(prev) });
+  // sahnalar orasidagi o'tish: sariq va qora chiziqlar ekranni kesib o'tadi
+  let w = -2;
+  for (const b of window.SCENE_STARTS) if (t > b - 0.32 && t < b + 0.32) w = (t - (b - 0.32)) / 0.64;
+  const x = w < -1 ? -200 : lerp(-160, 160, eInOut(clamp(w)));
+  $("#wipe").style.transform = `translateX(${x}%) skewX(-12deg)`;
+  $("#wipe2").style.transform = `translateX(${w < -1 ? -200 : x - 12}%) skewX(-12deg)`;
+  $("#demo").style.display = params.get("demo") === "0" ? "none" : "";
+}
+window.render = render;
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.decode().catch(() => {}))]);
+// Rasmlarni oldindan yuklash
+window.preload = async () => {
+  const srcs = ["home", "home-filter", "detail", "new-types", "form", "ask", "my", "stats", "nav-search", "nav-new", "nav-ask", "nav-my", "nav-stats"].map(SH)
+    .concat([1, 2, 3, 4, 5, 6, 7, 8].map((n) => `cats/${n}.jpg`));
+  await Promise.all(srcs.map((s) => { const i = new Image(); i.src = s; return i.decode().catch(() => console.log("yuklanmadi", s)); }));
+  await document.fonts.ready;
+};
+if (!params.has("render")) {
+  // Brauzerda ochilsa — real vaqtda o'ynaydi (ko'rib chiqish uchun)
+  window.preload().then(() => {
+    const t0 = performance.now();
+    const loop = () => { render(((performance.now() - t0) / 1000) % LEN); requestAnimationFrame(loop); };
+    loop();
+  });
+}
+</script>
+</body>
+</html>
