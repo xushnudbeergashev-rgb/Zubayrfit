@@ -1,5 +1,5 @@
 """Video uchun fon musiqasi (120 BPM, quvnoq pop ritm) — mualliflik huquqi muammosiz, kod bilan yaratiladi.
-Ishlatish: python3 make-music.py <soniya> <chiqish.wav> '[3, 7, ...]'   (oxirgisi — sahna almashish vaqtlari, «whoosh» uchun)
+Ishlatish: python3 make-music.py <soniya> <chiqish.wav> '[3, 7, ...]' [soft]   (oxirgisi — sahna almashish vaqtlari, «whoosh» uchun)
 """
 import json
 import sys
@@ -97,12 +97,53 @@ def whoosh(dur=0.6):
 # Akkordlar: C – G – Am – F (har biri 1 takt = 4 zarb)
 CHORDS = [(60, 64, 67), (55, 59, 62, 67), (57, 60, 64), (53, 57, 60, 65)]
 ROOTS = [36, 43, 45, 41]
+SOFT = len(sys.argv) > 4 and sys.argv[4] == "soft"
+
+
+def soft_pluck(m, dur=0.6):
+    # kamroq garmonika, uzunroq so'nish — «mayin» tovush
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    f = note(m)
+    s_ = np.sin(2 * np.pi * f * t) + 0.25 * np.sin(2 * np.pi * 2 * f * t) + 0.08 * np.sin(2 * np.pi * 3 * f * t)
+    return s_ * env(n, 0.008, 0.28)
+
+
+def soft_kick():
+    n = int(0.3 * SR)
+    t = np.arange(n) / SR
+    f = 45 + 50 * np.exp(-t * 25)
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * env(n, 0.004, 0.1)
+
+
+def shaker():
+    n = int(0.07 * SR)
+    x = rng.standard_normal(n)
+    x = x - np.convolve(x, np.ones(3) / 3, "same")
+    return x * np.sin(np.pi * np.arange(n) / n) ** 2
+
+
 beats = int(LEN / BEAT)
 for b in range(beats):
     t = b * BEAT
     bar = (b // 4) % 4
-    intro = b < 4  # birinchi takt — yengilroq
+    ch = CHORDS[bar]
     outro = t >= LEN - 2
+    if SOFT:
+        # mayin variant: yarim tezlikdagi yumshoq zarb, shaker, bas va sekin arpedjio (+ aks-sado)
+        if b % 4 in (0, 2) and b >= 4 and not outro:
+            add(soft_kick(), t, 0.45)
+        add(shaker(), t + BEAT / 2, 0.025, 0.5)
+        if b % 2 == 0:
+            add(bass(ROOTS[bar], 0.9), t, 0.28)
+        for s_ in range(2):
+            m = ch[(b * 2 + s_) % len(ch)] + (12 if (b * 2 + s_) % 6 >= 4 else 0)
+            for echo, g in ((0, 0.12), (0.375, 0.045), (0.75, 0.02)):
+                add(soft_pluck(m), t + s_ * BEAT / 2 + echo, g, -0.35 + 0.7 * ((b + s_) % 2))
+        if b % 4 == 0:
+            add(pad([m - 12 for m in ch] + [ch[0]], 4 * BEAT + 0.4), t, 0.13)
+        continue
+    intro = b < 4  # birinchi takt — yengilroq
     if not intro or b % 2 == 0:
         add(kick(), t, 0.9)
     if b % 4 in (1, 3) and not intro:
@@ -115,21 +156,20 @@ for b in range(beats):
         if b % 2:
             add(bass(ROOTS[bar] + 12, 0.12), t + BEAT * 0.75, 0.2)
     # arpedjio (16-lik notalar)
-    ch = CHORDS[bar]
-    for s in range(4):
-        m = ch[(b * 4 + s) % len(ch)] + (12 if (b * 4 + s) % 8 >= 6 else 0)
-        add(pluck(m), t + s * BEAT / 4, 0.16 if not outro else 0.1, -0.3 + 0.2 * s)
+    for s_ in range(4):
+        m = ch[(b * 4 + s_) % len(ch)] + (12 if (b * 4 + s_) % 8 >= 6 else 0)
+        add(pluck(m), t + s_ * BEAT / 4, 0.16 if not outro else 0.1, -0.3 + 0.2 * s_)
     if b % 4 == 0:
         add(pad([m - 12 for m in ch], 4 * BEAT), t, 0.09)
 
 # Sahna almashishlarida «whoosh»
 for c in CUTS:
-    add(whoosh(), c - 0.45, 0.22, 0.0)
+    add(whoosh(), c - 0.45, 0.1 if SOFT else 0.22, 0.0)
 # Oxirida yakuniy akkord
 add(pad([48, 60, 64, 67, 72], 2.0), LEN - 2.0, 0.18)
 
 # Siqish va ovozni me'yorlash, oxirida so'nish
-mix = np.tanh(mix * 1.2)
+mix = np.tanh(mix * (1.0 if SOFT else 1.2))
 mix /= np.max(np.abs(mix)) + 1e-9
 mix *= 0.8
 fade = np.ones(N)

@@ -119,18 +119,16 @@ body{font-family:var(--body);color:var(--white);-webkit-font-smoothing:antialias
     </div>
     <div class="tg" id="post" style="left:150px;right:150px;top:860px">
       <div class="who"><i>🐱</i>Hadyaga mushuklar</div>
-      <img class="photo" src="cats/1.jpg" style="height:520px;object-fit:cover">
+      <img class="photo" src="cats/1.jpg" style="height:470px;object-fit:cover">
       <div class="cap"><span class="tag">#hadyaga</span>
 
 🦁 Zoti: Oddiy
-🐈 Yoshi: 2 oylik
-😺 Jinsi: Urg'ochi
-🏥 Sogʻligʻi: Sog'lom, Emlangan
-🏠 Manzil: <span class="tag">#Toshkent_shahri #Chilonzor</span>
-🚗 Dostafka: Bor
+🐈 Yoshi: 3 oylik
+🏠 Manzil: <span class="tag">#Toshkent_shahri #Yunusobod</span>
+🚗 Dostafka: Kelishiladi
 💰 Narxi: Bepul</div>
     </div>
-    <div class="toast" id="toast" style="left:110px;right:110px;top:1700px"><i>🎉</i><span>E'loningiz kanalga joylandi!<br><small style="font-weight:500;color:var(--muted)">Bot sizga darhol xabar beradi</small></span></div>
+    <div class="toast" id="toast" style="left:110px;right:110px;top:1735px"><i>🎉</i><span>E'loningiz kanalga joylandi!<br><small style="font-weight:500;color:var(--muted)">Bot sizga darhol xabar beradi</small></span></div>
   </div>
 
   <!-- 8. Xavfsizlik -->
@@ -346,6 +344,9 @@ function confetti(lt, at, cx, cy) {
 // ---------------------------------------------------------------- sahnalar
 const SH = (n) => `shots/${n}.png`;
 const B = (shot, key) => (BOXES[shot] || {})[key];
+// Ekran rasmini qancha pastga surish mumkin (sahifa qisqa bo'lsa, bo'sh joy ko'rinmasin)
+const HEIGHTS = {};
+const maxScroll = (name) => Math.max(0, (HEIGHTS[SH(name)] || 3000) - (SCREEN_H - TOP) / K + 150);
 const S = {
   hook(lt, d) {
     caption(lt, "", "", "");
@@ -365,7 +366,7 @@ const S = {
     $("#hook .sub").style.opacity = prog(lt, 1.1, 0.3);
     $("#hook .sub").style.transform = `translateY(${(1 - eOut(prog(lt, 1.1, 0.4))) * 50}px)`;
     // atrofida mushuklar paydo bo'ladi
-    avatars(lt, "#hook", [[90, 1640, 1], [790, 1620, 3], [70, 400, 5], [810, 390, 2], [-60, 1230, 6], [930, 1200, 4]], 0.5);
+    avatars(lt, "#hook", [[90, 1640, 1], [790, 1620, 3], [70, 400, 5], [810, 390, 2], [-60, 1230, 4], [930, 1200, 1]], 0.5);
     const z = 1 + prog(lt, d - 0.4, 0.4) * 0.15;
     $("#hook").style.transform = `scale(${z})`;
   },
@@ -373,7 +374,7 @@ const S = {
     caption(lt, "Qidirish", 1, "Hududingizdagi *mushuklarni* toping");
     phoneEnter(lt, ctx.enter);
     const box = B("home", "item");
-    const sc = eInOut(prog(lt, 1.3, d - 1.6)) * 1150;
+    const sc = eInOut(prog(lt, 1.3, d - 1.6)) * Math.min(1150, maxScroll("home"));
     screens([{ src: SH("home"), scroll: sc }], SH("nav-search"));
     tap(lt, 0.95, B("home", "region"), sc);
     pills(lt, [
@@ -385,9 +386,9 @@ const S = {
   detail(lt, d, ctx) {
     caption(lt, "E'lon sahifasi", 2, "Rasm, ma'lumot va *egasi* bilan aloqa");
     phoneEnter(lt, ctx.enter);
-    const target = (B("detail", "contact")?.y || 1700) - 1050;
+    const target = Math.min(maxScroll("detail"), (B("detail", "contact")?.y || 1700) - 1050);
     const sc = eInOut(prog(lt, 0.7, 1.3)) * target;
-    swap(lt, 0, { src: SH("home"), scroll: 1150 }, { src: SH("detail"), scroll: sc }, SH("nav-search"), 0.45);
+    swap(lt, 0, { src: SH("home"), scroll: Math.min(1150, maxScroll("home")) }, { src: SH("detail"), scroll: sc }, SH("nav-search"), 0.45);
     tap(lt, 2.3, B("detail", "contact"), sc);
     pills(lt, [
       { text: "Egasiga bir bosishda", icon: "phone", x: 30, y: 1060, r: -3, at: 1.9, lemon: true },
@@ -397,7 +398,7 @@ const S = {
   post(lt, d, ctx) {
     caption(lt, "E'lon berish", 3, "Hadyaga e'lon — *mutlaqo* *bepul*");
     phoneEnter(lt, ctx.enter);
-    const scF = eInOut(prog(lt, 1.6, d - 1.9)) * ((B("form", "contact")?.y || 2495) - 1050);
+    const scF = eInOut(prog(lt, 1.6, d - 1.9)) * Math.min(maxScroll("form"), (B("form", "contact")?.y || 2495) - 1050);
     const sw = Math.min(1.2, d * 0.3);
     swap(lt, 0, { src: SH("detail"), scroll: 600 }, { src: SH("new-types"), scroll: 0 }, SH("nav-new"), 0.4);
     if (lt > sw) swap(lt, sw, { src: SH("new-types"), scroll: 0 }, { src: SH("form"), scroll: scF }, SH("nav-new"), 0.4);
@@ -415,7 +416,7 @@ const S = {
     const done = lt > okAt + 0.2;
     $("#admText").textContent = done
       ? "✅ #12 kanalga joylandi\nAdmin: Aziza"
-      : "🆕 Hadya e'lon #12 — Toshkent shahri, Chilonzor tumani\n👤 Aziza\nQaroringiz?";
+      : "🆕 Hadya e'lon #12 — Toshkent shahri, Yunusobod tumani\n👤 Aziza\nQaroringiz?";
     $("#admBtns").style.display = done ? "none" : "";
     const press = prog(lt, okAt - 0.15, 0.15) * (1 - prog(lt, okAt + 0.05, 0.15));
     $("#okBtn").style.transform = `scale(${1 - press * 0.08})`;
@@ -441,16 +442,15 @@ const S = {
   mine(lt, d, ctx) {
     caption(lt, "Mening e'lonlarim", 6, "Mushuk *uy* *topdimi?* Bir bosishda belgilang");
     phoneEnter(lt, ctx.enter);
-    const at = Math.min(1.9, d * 0.55);
-    swap(lt, at, { src: SH("my"), scroll: 0 }, { src: SH("stats"), scroll: 0 }, at < lt ? SH("nav-stats") : SH("nav-my"), 0.45);
+    screens([{ src: SH("my"), scroll: 0 }], SH("nav-my"));
     cover(null);
     const r = tap(lt, 0.9, B("my", "given"), 0);
     void r;
     const g = B("my", "given");
     if (g) confetti(lt, 1.0, 190 + 22 + (g.x + g.w / 2) * K, 520 + 22 + TOP + (g.y + g.h / 2) * K);
     pills(lt, [
-      { text: "Berildi ✓", icon: "check", x: 60, y: 1130, r: -4, at: 1.0, out: at, lemon: true },
-      { text: "Statistika hammaga ochiq", icon: "chart", x: 300, y: 1450, r: 3, at: at + 0.5 },
+      { text: "Berildi ✓", icon: "check", x: 60, y: 1130, r: -4, at: 1.0, lemon: true },
+      { text: "Kanaldagi post ham yangilanadi", icon: "send", x: 250, y: 1460, r: 3, at: 1.7 },
     ]);
   },
   safety(lt, d) {
@@ -493,7 +493,7 @@ const S = {
     const pulse = 1 + Math.max(0, Math.sin((lt - 2) * 6)) * 0.04 * prog(lt, 2, 0.2);
     $("#ctaBtn").style.transform = `scale(${Math.max(0, b) * pulse})`;
     $("#cta .chan").style.opacity = prog(lt, 1.7, 0.3);
-    avatars(lt, "#cta", [[70, 1540, 1], [435, 1620, 5], [800, 1540, 3]], 1.1);
+    avatars(lt, "#cta", [[70, 1540, 2], [435, 1620, 1], [800, 1540, 4]], 1.1);
   },
 };
 const PHONE_SCENES = new Set(["search", "detail", "post", "ai", "mine"]);
@@ -552,8 +552,8 @@ window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((i
 // Rasmlarni oldindan yuklash
 window.preload = async () => {
   const srcs = ["home", "home-filter", "detail", "new-types", "form", "ask", "my", "stats", "nav-search", "nav-new", "nav-ask", "nav-my", "nav-stats"].map(SH)
-    .concat([1, 2, 3, 4, 5, 6, 7, 8].map((n) => `cats/${n}.jpg`));
-  await Promise.all(srcs.map((s) => { const i = new Image(); i.src = s; return i.decode().catch(() => console.log("yuklanmadi", s)); }));
+    .concat([1, 2, 3, 4, 5].map((n) => `cats/${n}.jpg`));
+  await Promise.all(srcs.map((s) => { const i = new Image(); i.src = s; return i.decode().then(() => { HEIGHTS[s] = i.naturalHeight; }).catch(() => console.log("yuklanmadi", s)); }));
   await document.fonts.ready;
 };
 if (!params.has("render")) {

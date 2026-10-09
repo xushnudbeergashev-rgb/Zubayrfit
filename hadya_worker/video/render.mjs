@@ -4,6 +4,8 @@
 //   node render.mjs --len 15                 → out/hadya-15s.mp4
 //   node render.mjs --len 30 --stills 1,5,9  → out/still-*.jpg (tez tekshirish uchun)
 //   --demo 0  → «namuna e'lonlar» yozuvini olib tashlaydi (haqiqiy rasmlar qo'yilgandan keyin)
+//   --music soft|pop  → musiqa uslubi (standart: soft)
+//   --voice out/voice.wav  → ovozli izoh qo'shiladi (make-voice.py yaratadi), musiqa gap paytida pasayadi
 import fs from "node:fs";
 import path from "node:path";
 import { spawn, execFileSync } from "node:child_process";
@@ -38,14 +40,23 @@ if (stills) {
   process.exit(0);
 }
 
-// Musiqa (bo'lmasa yaratiladi)
-const music = path.join(out, `music-${LEN}.wav`);
-execFileSync("python3", [path.join(dir, "make-music.py"), String(LEN), music, JSON.stringify(await page.evaluate(() => window.SCENE_STARTS))], { stdio: "inherit" });
+// Musiqa (--music soft — mayin variant) va ixtiyoriy ovozli izoh (--voice out/voice.wav)
+const STYLE = arg("music", "soft");
+const VOICE = arg("voice", "");
+const music = path.join(out, `music-${LEN}-${STYLE}.wav`);
+execFileSync("python3", [path.join(dir, "make-music.py"), String(LEN), music,
+  JSON.stringify(await page.evaluate(() => window.SCENE_STARTS)), STYLE], { stdio: "inherit" });
+let audio = music;
+if (VOICE) {
+  audio = path.join(out, `mix-${LEN}.wav`);
+  execFileSync("python3", [path.join(dir, "mix-audio.py"), music, path.resolve(VOICE), audio], { stdio: "inherit" });
+}
 
-const file = path.join(out, `hadya-${LEN}s.mp4`);
-const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-", "-i", music,
+const file = path.join(out, `hadya-${LEN}s${VOICE ? "-ovozli" : ""}.mp4`);
+const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-", "-i", audio,
   "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-r", String(FPS),
-  "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", file], { stdio: ["pipe", "inherit", "inherit"] });
+  // ijtimoiy tarmoqlar uchun standart balandlik (-14 LUFS)
+  "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "44100", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", file], { stdio: ["pipe", "inherit", "inherit"] });
 const total = LEN * FPS;
 const t0 = Date.now();
 for (let f = 0; f < total; f++) {

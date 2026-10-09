@@ -1,5 +1,5 @@
 // Namuna e'lonlar uchun mushuk illyustratsiyalari (haqiqiy rasmlar bo'lmaganda).
-// Ishlatish: node make-cats.mjs  → cats/1.jpg … cats/8.jpg
+// Ishlatish: node make-cats.mjs  → cats-demo/1.jpg … cats-demo/8.jpg
 // Haqiqiy rasmlar bo'lsa, ularni shu nomlar bilan cats/ papkasiga qo'ying — bu skript kerak emas.
 import fs from "node:fs";
 import path from "node:path";
@@ -69,7 +69,7 @@ function catSvg(c, i) {
 </svg>`;
 }
 
-const out = path.join(dir, "cats");
+const out = path.join(dir, "cats-demo");
 fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });

@@ -58,38 +58,24 @@ await worker.fetch(new Request("http://x/setup?key=k"), env, ctx);
 const T = Math.floor(Date.now() / 1000);
 const PHONE = "+998000000000"; // ataylab soxta raqam (+998 00 000 00 00)
 const media = (n) => JSON.stringify([{ type: "photo", file_id: `cat${n}`, thumb: `cat${n}` }]);
+// Kanaldagi haqiqiy e'lonlar rasmlari (cats/1..5.jpg). Zoti, yoshi va hududi — taxminiy, rasmga qarab yozilgan:
+// haqiqiy ma'lumot bo'lsa, shu yerda o'zgartiring.
 const LISTINGS = [
-  // [rasm, tur, hudud, tuman, ma'lumot, holat, egasi]
-  [1, "hadya", "Toshkent shahri", "Chilonzor tumani", { breed: "Oddiy", age: "2 oylik", gender: "f", health: ["soglom", "emlangan"], delivery: "bor", extra: "Juda o'yinqaroq, lotokka o'rgangan. Mehribon oilaga beramiz." }],
-  [2, "sotuv", "Toshkent shahri", "Yunusobod tumani", { breed: "Britan", age: "3 oylik", gender: "m", health: ["soglom", "emlangan"], delivery: "kelish", price: 1200000 }],
-  [3, "hadya", "Samarqand viloyati", "Samarqand shahri", { breed: "Oddiy", age: "1 yosh", gender: "m", health: ["steril"], delivery: "yoq" }],
-  [4, "sotuv", "Toshkent viloyati", "Chirchiq shahri", { breed: "Turk angorasi", age: "4 oylik", gender: "f", health: ["soglom"], delivery: "bor", price: 900000 }],
-  [5, "hadya", "Farg'ona viloyati", "Farg'ona shahri", { breed: "Uch rangli", age: "5 oylik", gender: "f", health: ["soglom"], delivery: "kelish" }],
-  [6, "sotuv", "Buxoro viloyati", "Buxoro shahri", { breed: "Siam", age: "2 oylik", gender: "m", health: ["emlangan"], delivery: "bor", price: 1500000 }],
-  [7, "hadya", "Andijon viloyati", "Andijon shahri", { breed: "Oddiy", age: "6 oylik", gender: "u", health: [], delivery: "bor" }],
-  [8, "reklama", "Toshkent shahri", "Mirzo Ulug'bek tumani", { title: "«Mushukjon» vet-klinika", about: "Emlash, sterilizatsiya, ko'rik", price: "50 000 so'mdan" }],
+  // [rasm, tur, hudud, tuman, ma'lumot, egasi — ME bo'lsa «Mening e'lonlarim»da ham chiqadi]
+  [1, "hadya", "Toshkent shahri", "Yunusobod tumani", { breed: "Oddiy", age: "3 oylik", gender: "u", health: [], delivery: "kelish", extra: "Ko'k ko'zli mushukcha. Mehribon oilaga beriladi." }, ME.id],
+  [2, "hadya", "Toshkent shahri", "Chilonzor tumani", { breed: "Oddiy", age: "2 oylik", gender: "u", health: [], delivery: "kelish" }, 501],
+  [3, "hadya", "Toshkent shahri", "Mirzo Ulug'bek tumani", { breed: "2 ta mushukcha", age: "2 oylik", gender: "u", health: [], delivery: "kelish" }, ME.id],
+  [4, "hadya", "Toshkent shahri", "Yashnobod tumani", { breed: "Oddiy", age: "2 oylik", gender: "u", health: [], delivery: "kelish" }, 503],
+  [5, "hadya", "Toshkent shahri", "Shayxontohur tumani", { breed: "Oddiy", age: "3 oylik", gender: "u", health: [], delivery: "kelish" }, 504],
 ];
 const ins = db.prepare(
   "INSERT INTO listings (user_id, username, first_name, kind, region, district, data, media, status, channel_msg_id, channel_username, created_at, published_at, check_at) " +
   "VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, 'Hadyagamushuklar', ?, ?, ?)");
-LISTINGS.forEach(([n, kind, region, district, data], i) => {
-  ins.run(i === 0 ? ME.id : 500 + i, "Demo", kind, region, district, JSON.stringify({ phone: PHONE, ...data }), media(n),
+LISTINGS.forEach(([n, kind, region, district, data, owner], i) => {
+  ins.run(owner, "Aziza", kind, region, district, JSON.stringify({ phone: PHONE, ...data }), media(n),
     "published", 100 + i, T - i * 3600, T - i * 3600, T + 30 * 86400);
 });
-// «Mening e'lonlarim» uchun turli holatlar
-const mine = [[5, "hadya", "given"], [2, "sotuv", "awaiting_payment"], [7, "hadya", "pending"]];
-for (const [n, kind, status] of mine) {
-  ins.run(ME.id, "Aziza", kind, "Toshkent shahri", "Chilonzor tumani",
-    JSON.stringify({ phone: PHONE, breed: "Oddiy", age: "3 oylik", gender: "f", health: [], delivery: "bor", price: kind === "sotuv" ? 700000 : undefined }),
-    media(n), status, null, T - 86400 * 3, status === "given" ? T - 86400 * 9 : null, null);
-}
-// Statistika uchun yopilgan e'lonlar (namuna)
-const statRegions = ["Toshkent shahri", "Toshkent shahri", "Toshkent shahri", "Samarqand viloyati", "Farg'ona viloyati", "Andijon viloyati", "Toshkent viloyati"];
-for (let i = 0; i < 42; i++) {
-  db.prepare("INSERT INTO listings (user_id, kind, region, district, data, media, status, created_at, published_at, closed_at) VALUES (?, 'hadya', ?, '', '{}', '[]', ?, ?, ?, ?)")
-    .run(600 + i, statRegions[i % statRegions.length], i % 6 === 5 ? "sold" : "given", T - 86400 * (i + 2), T - 86400 * (i + 2), T - 86400 * (i % 20));
-}
-for (let i = 0; i < 230; i++) db.prepare("INSERT INTO users (id, first_name, created_at) VALUES (?, 'U', ?)").run(1000 + i, T - 86400 * 30);
+// Statistika raqamlari videoda ko'rsatilmaydi (soxta raqam bo'lmasin)
 
 // ---------------------------------------------------------------- server
 const server = http.createServer(async (req, res) => {
@@ -170,7 +156,7 @@ await page.click('nav button[data-view="new"]');
 await page.screenshot({ path: path.join(shots, "nav-new.png"), clip: { x: 0, y: 844 - 96, width: 390, height: 96 } });
 await shoot(page, "new-types", { hadya: '.type[data-kind="hadya"]' });
 await page.click('.type[data-kind="hadya"]');
-for (const [i, n] of [[0, 1], [1, 4], [2, 7]]) {
+for (const [i, n] of [[0, 1], [1, 5]]) {
   // fayl tanlash oynasi o'rniga rasm to'g'ridan-to'g'ri input'ga beriladi (slotIdx — ilovadagi o'zgaruvchi)
   await page.evaluate((i) => { slotIdx = i; }, i);
   await page.setInputFiles("#file", path.join(dir, "cats", `${n}.jpg`));
