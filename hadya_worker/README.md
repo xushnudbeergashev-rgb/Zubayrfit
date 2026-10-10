@@ -56,7 +56,7 @@ Bepul tarifda bitta ishga tushishda taxminan 50 ta tashqi so'rov (Telegram va ba
 
 - To'lov muddati o'tgan e'lonlarni bekor qilish.
 - To'lov muddati tugashiga 24 soat qolganda foydalanuvchiga eslatma.
-- 6 soatdan ko'p tekshiruv kutayotgan e'lonlar va tekshirilmagan cheklar haqida adminlarga eslatma (har 6 soatda ko'pi bilan bir marta).
+- Navbat eslatmasi: so'rovlar 6 soatdan ko'p kutib qolsa yoki tinch soatlarda kelgan bo'lsa, tinch soatlar tugagach yig'ma xabar ovoz bilan qayta yuboriladi.
 - **30 kunlik tekshiruv.** Kanalda 30 kun turgan e'lon egasidan "Hali dolzarbmi?" deb so'raladi. 3 kun ichida javob bo'lmasa, e'lon "Dolzarb emas" deb yopiladi va kanaldagi postdan kontaktlar olib tashlanadi. Savol faqat egasiga **yetib borgandan keyin** "so'raldi" deb belgilanadi. Telegram vaqtincha xato bersa, keyingi safar qayta urinadi. Egasi botni bloklagan bo'lsa (yoki xabar 5 marta yetmasa), e'lon 15 kundan keyin yopiladi. Kanaldan import qilingan postlar bu tekshiruvga kirmaydi, chunki ularning egasi botda yo'q.
 - Vaqtinchalik yozuvlarni tozalash (`mg:`, `rcpt:`, `done:`).
 
@@ -89,3 +89,22 @@ Kanalga admin o'zi joylagan post ilovaga **faqat** quyidagi ikki shart bajarilsa
 - matnida `#hadyaga`, `#sotiladi` yoki `#reklama` hashtagi bor.
 
 Oddiy xabarlar ("Assalomu alaykum...", e'lon bo'lmagan postlar) qo'shilmaydi.
+
+## Navbat: yangi e'lonlar va to'lov cheklari
+
+Har bir e'lon adminga alohida xabar bo'lib kelmaydi. Ular Mini App'dagi **Admin → Navbat** bo'limida tartib bilan kartochka ko'rinishida turadi. Har bir kartochkada:
+- rasmlar (bosilsa kattalashadi);
+- e'lonning barcha ma'lumotlari;
+- yuboruvchi (ism, @profil, ID) va kontakt;
+- "username egasiniki bo'lmasligi mumkin" ogohlantirishi;
+- **Tasdiqlash** va **Rad etish** (sabab tanlanadi) tugmalari.
+
+To'lov cheklari alohida "Cheklar" yorlig'ida turadi va **Pul tushdi** yoki **Chek noto'g'ri** tugmalari bilan tasdiqlanadi.
+
+Botda har bir adminda **bitta** yig'ma xabar turadi: "📥 Tekshiruvni kutmoqda: 3 ta yangi e'lon, 1 ta to'lov cheki" va "Ko'rib chiqish" tugmasi.
+- Yangi so'rov kelsa, eski xabar o'chirilib, yangisi yuboriladi (bildirishnoma keladi).
+- So'rov ko'rib chiqilsa, xabar joyida yangilanadi. Navbat bo'shasa, xabar o'chadi.
+
+**Tinch soatlar** (standart 23:00–08:00, Toshkent vaqti) Admin panel → Bildirishnomalar bo'limida o'zgartiriladi yoki o'chiriladi. Bu vaqtda xabar ovozsiz keladi. Tinch soatlar tugagach, navbatda so'rov qolgan bo'lsa, ovozli eslatma beriladi.
+
+Foydalanuvchi yuborgan rasmlar Telegram'ga yuklanishi uchun birinchi admin chatiga ovozsiz yuklanib, darhol o'chiriladi. Xohlasangiz, buning o'rniga maxfiy guruh yoki kanal ID'sini `STORAGE_CHAT` (Text) o'zgaruvchisiga yozing: rasmlar o'sha yerga yuklanadi va o'chirilmaydi. Bot o'sha chatda xabar yubora olishi kerak.

@@ -122,6 +122,7 @@ const hadyaForm = (extra = {}) => form({
   delivery: "bor", breed: "britan", ...extra,
 });
 const row = (id) => env.DB.raw.prepare("SELECT * FROM listings WHERE id=?").get(id);
+const setSettingRaw = (k, v) => env.DB.raw.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(k, v);
 
 before(async () => {
   worker = (await import(pathToFileURL(path.join(dir, "../dist/worker.js")).href)).default;
@@ -161,13 +162,18 @@ test("faqat telefon bilan e'lon: kanal postida Telegram qatori yo'q", async () =
   assert.equal(j.ok, true, j.error);
   phoneOnlyId = j.id;
   assert.equal(row(j.id).username, null);
-  const cap = lastCall("sendMediaGroup").body.media[0].caption;
-  assert.match(cap, /📞 \+998 90 123 45 67/);
-  assert.doesNotMatch(cap, /Telegram:/);
-  // adminga kim yuborgani ko'rsatiladi (ban qilish uchun ID kerak)
-  const toAdmin = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1);
-  assert.match(toAdmin.body.text, /ID: <code>222<\/code>/);
-  assert.doesNotMatch(toAdmin.body.text, /egasiniki bo'lmasligi/); // username yozilmagan — ogohlantirish yo'q
+  // rasmlar admin chatiga ovozsiz yuklanib, darhol o'chiriladi; adminga bitta yig'ma xabar boradi
+  assert.equal(lastCall("sendMediaGroup").body.disable_notification, "true");
+  assert.ok(callsOf("deleteMessage").length > 0);
+  const notice = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body;
+  assert.match(notice.text, /Tekshiruvni kutmoqda[\s\S]*1 ta yangi e'lon/);
+  assert.match(notice.reply_markup.inline_keyboard[0][0].web_app.url, /#queue$/);
+  // navbatda kim yuborgani ko'rinadi (ban uchun ID), username yozilmagan — ogohlantirish yo'q
+  const q = await reqJson("/api/admin/queue", { user: { id: ADMIN, first_name: "Admin" } });
+  const it = q.pending.find((i) => i.id === j.id);
+  assert.equal(it.user.id, 222);
+  assert.equal(it.contact.phone, "+998 90 123 45 67");
+  assert.equal(it.warn, null);
 });
 
 test("faqat username bilan e'lon: telefon qatori yo'q, t.me havolasi ham qabul qilinadi", async () => {
@@ -175,12 +181,13 @@ test("faqat username bilan e'lon: telefon qatori yo'q, t.me havolasi ham qabul q
   assert.equal(j.ok, true, j.error);
   userOnlyId = j.id;
   assert.equal(row(j.id).username, "boshqa_nom"); // profildagi ali_real emas, formaga yozilgani
-  const cap = lastCall("sendMediaGroup").body.media[0].caption;
-  assert.match(cap, /Telegram: @boshqa_nom/);
-  assert.doesNotMatch(cap, /📞/);
-  // profildagi username (ali_real) bilan mos emas → adminga ogohlantirish
-  const toAdmin = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body.text;
-  assert.match(toAdmin, /Username egasiniki bo'lmasligi mumkin.*@boshqa_nom.*@ali_real/);
+  // ikkinchi so'rov: eski yig'ma xabar o'chirilib, yangisi (bildirishnoma bilan) yuboriladi
+  const notice = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body.text;
+  assert.match(notice, /2 ta yangi e'lon/);
+  // profildagi username (ali_real) bilan mos emas → navbatda ogohlantirish
+  const q = await reqJson("/api/admin/queue", { user: { id: ADMIN, first_name: "Admin" } });
+  assert.match(q.pending.find((i) => i.id === j.id).warn, /egasiniki bo'lmasligi mumkin.*@boshqa_nom.*@ali_real/);
+  assert.equal((await reqJson("/api/admin/queue", { user: USER })).error, "Bu bo'lim faqat adminlar uchun.");
 });
 
 test("tekshiruvdagi e'lon rasmi kalitsiz ochilmaydi, egasi kalit bilan ko'radi", async () => {
@@ -194,9 +201,21 @@ test("tekshiruvdagi e'lon rasmi kalitsiz ochilmaydi, egasi kalit bilan ko'radi",
   assert.equal(r.headers.get("cache-control"), "private, max-age=3600");
 });
 
-test("admin tasdiqlaydi → kanalga chiqadi, check_at 30 kunga qo'yiladi", async () => {
-  await cb({ id: ADMIN, first_name: "Admin" }, `m:ok:${phoneOnlyId}`);
+test("admin tasdiqlaydi (Navbat va eski bot tugmasi) → kanalga chiqadi, check_at 30 kunga qo'yiladi", async () => {
+  const j = await reqJson(`/api/admin/queue/${phoneOnlyId}`, { method: "POST", user: { id: ADMIN, first_name: "Admin" }, body: { action: "approve" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(j.left, 1);
+  let cap = lastCall("sendMediaGroup").body.media[0].caption;
+  assert.match(cap, /📞 \+998 90 123 45 67/);
+  assert.doesNotMatch(cap, /Telegram:/);
+  assert.match(callsOf("editMessageText").filter((c) => c.body.chat_id === ADMIN).at(-1).body.text, /1 ta yangi e'lon/);
+  const again = await reqJson(`/api/admin/queue/${phoneOnlyId}`, { method: "POST", user: { id: ADMIN, first_name: "Admin" }, body: { action: "approve" } });
+  assert.match(again.error, /allaqachon/);
   await cb({ id: ADMIN, first_name: "Admin" }, `m:ok:${userOnlyId}`);
+  cap = lastCall("sendMediaGroup").body.media[0].caption;
+  assert.match(cap, /Telegram: @boshqa_nom/);
+  assert.doesNotMatch(cap, /📞/);
+  assert.equal(lastCall("deleteMessage").body.chat_id, ADMIN, "navbat bo'shadi — yig'ma xabar o'chiriladi");
   const r = row(phoneOnlyId);
   assert.equal(r.status, "published");
   assert.ok(r.check_at - r.published_at === 30 * 86400);
@@ -301,6 +320,8 @@ test("to'lov eslatmasi bir marta, admin eslatmasi va tozalash", async () => {
   env.DB.raw.prepare("UPDATE listings SET pay_deadline=? WHERE id=?").run(t + 10 * 3600, id);
   // eski pending e'lon (admin eslatmasi uchun) va eski vaqtinchalik sozlamalar
   env.DB.raw.prepare("UPDATE listings SET created_at=? WHERE status='pending'").run(t - 7 * 3600);
+  // test soatga bog'liq bo'lmasin: tinch soatlar o'chiriladi, oxirgi bildirishnoma 7 soat oldin bo'lgan deb olinadi
+  setSettingRaw("quiet_from", "off"); setSettingRaw("quiet_to", "off"); setSettingRaw("q_notified_at", String(t - 7 * 3600));
   env.DB.raw.prepare("INSERT INTO settings (key, value, updated_at) VALUES ('mg:1','5',?), ('mg:2','6',?), ('done:1',?,?)")
     .run(t - 3 * 86400, t, String(t - 10), t);
   const n = callsOf("sendMessage").length;
@@ -308,7 +329,7 @@ test("to'lov eslatmasi bir marta, admin eslatmasi va tozalash", async () => {
   await Promise.all(pending.splice(0));
   const sent = callsOf("sendMessage").slice(n);
   assert.ok(sent.some((c) => c.body.chat_id === USER.id && /muddati tugashiga 10 soat/.test(c.body.text)));
-  assert.ok(sent.some((c) => c.body.chat_id === ADMIN && /Ko'rib chiqilmagan/.test(c.body.text)));
+  assert.ok(sent.some((c) => c.body.chat_id === ADMIN && /Tekshiruvni kutmoqda/.test(c.body.text)), "6 soatdan keyin ovozli eslatma");
   const keys = env.DB.raw.prepare("SELECT key FROM settings WHERE key LIKE 'mg:%' OR key LIKE 'done:%'").all().map((r) => r.key);
   assert.deepEqual(keys, ["mg:2"]);
   // ikkinchi marta eslatilmaydi
@@ -589,4 +610,67 @@ test("kanal: oddiy post (salomlashish, kanal nomi) e'lon bo'lib qo'shilmaydi; #h
     photo: [{ file_id: "q" }], forward_origin: { type: "channel", chat: { id: -100, username: "Hadyagamushuklar" }, message_id: 5006, date: T() } } });
   assert.match(lastCall("sendMessage").body.text, /Turi aniqlanmadi/);
   assert.equal(count(), n + 1);
+});
+
+// ---------------------------------------------------------------- 4-bosqich: Navbat va tinch soatlar
+test("tinch soatlar: yig'ma xabar ovozsiz, tugagach — ovozli eslatma", async () => {
+  const h = new Date(Date.now() + 5 * 3600e3).getUTCHours(); // Toshkent soati
+  setSettingRaw("quiet_from", String(h)); setSettingRaw("quiet_to", String((h + 1) % 24)); // hozir — tinch soat
+  const j = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: { id: 901, first_name: "Kamola" }, phone: "+998901234567" }) });
+  assert.equal(j.ok, true, j.error);
+  const notice = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body;
+  assert.equal(notice.disable_notification, true);
+  assert.match(notice.text, /Tinch soatlar/);
+  // tinch soat davomida cron eslatma yubormaydi
+  let n = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).length;
+  await runCron();
+  assert.equal(callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).length, n);
+  // tinch soat tugadi — kutayotgan so'rov haqida ovozli eslatma
+  setSettingRaw("quiet_from", String((h + 2) % 24)); setSettingRaw("quiet_to", String((h + 3) % 24));
+  await runCron();
+  const after = callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN);
+  assert.equal(after.length, n + 1);
+  assert.equal(after.at(-1).body.disable_notification, false);
+  // shundan keyin darhol qayta eslatilmaydi
+  await runCron();
+  assert.equal(callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).length, n + 1);
+  // admin panelda sozlash: noto'g'ri qiymat rad etiladi, "off" — o'chiradi
+  const ADMU = { id: ADMIN, first_name: "Admin" };
+  let r = await reqJson("/api/admin/settings", { method: "POST", user: ADMU, body: { price: "7000", quiet_from: "25", quiet_to: "8" } });
+  assert.match(r.error, /0–23/);
+  r = await reqJson("/api/admin/settings", { method: "POST", user: ADMU, body: { price: "7000", quiet_from: "off", quiet_to: "off" } });
+  assert.equal(r.ok, true, r.error);
+});
+
+test("Navbat: rad etish (sabab bilan), to'lov chekini ko'rish va tasdiqlash", async () => {
+  const ADMU = { id: ADMIN, first_name: "Admin" };
+  let q = await reqJson("/api/admin/queue", { user: ADMU });
+  const target = q.pending.at(-1);
+  assert.ok(target.media[0].url.includes("k="), "rasm maxfiy kalit bilan");
+  assert.equal((await req("/" + target.media[0].url)).status, 200);
+  let j = await reqJson(`/api/admin/queue/${target.id}`, { method: "POST", user: ADMU, body: { action: "reject", reason: "photo" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(row(target.id).status, "rejected");
+  assert.match(row(target.id).reject_reason, /Rasm/);
+  assert.ok(callsOf("sendMessage").some((c) => c.body.chat_id === row(target.id).user_id && /qabul qilinmadi/.test(c.body.text)));
+  // to'lov: sotuv e'loni → tasdiq → chek → navbatda chek → «Pul tushdi» → kanalga
+  const SELLER = { id: 902, first_name: "Bobur" };
+  const fd = form({ __user: SELLER, kind: "sotuv", region: "Toshkent shahri", district: "Chilonzor tumani", age: "1 yosh", gender: "m",
+    delivery: "yoq", price: "700000", phone: "+998901112233" });
+  const { id } = await reqJson("/api/submit", { method: "POST", body: fd });
+  j = await reqJson(`/api/admin/queue/${id}`, { method: "POST", user: ADMU, body: { action: "approve" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(row(id).status, "awaiting_payment");
+  await tgUpdate({ message: { message_id: 77, from: SELLER, chat: { id: SELLER.id, type: "private" }, photo: [{ file_id: "receipt1" }] } });
+  // eski usulda chek adminga rasm bo'lib bormaydi
+  assert.equal(callsOf("sendPhoto").filter((c) => c.body.chat_id === ADMIN && c.body.photo === "receipt1").length, 0);
+  assert.match(callsOf("sendMessage").filter((c) => c.body.chat_id === ADMIN).at(-1).body.text, /1 ta to'lov cheki/);
+  q = await reqJson("/api/admin/queue", { user: ADMU });
+  const pay = q.payments.find((i) => i.id === id);
+  assert.ok(pay.receipt);
+  assert.equal((await req("/" + pay.receipt)).status, 200);
+  assert.equal((await req(`/api/receipt/${id}?k=notogri`)).status, 404);
+  j = await reqJson(`/api/admin/queue/${id}`, { method: "POST", user: ADMU, body: { action: "pay_ok" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(row(id).status, "published");
 });

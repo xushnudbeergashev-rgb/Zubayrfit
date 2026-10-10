@@ -414,39 +414,166 @@ function usernameWarning(formName, profileName) {
     (profileName ? `profilda @${esc(profileName)}` : "profilda username yo'q");
 }
 
-async function sendToAdmins(env, l, files, profileUsername = null) {
-  const bot = await botUsername(env);
-  const cap = caption(env, l, bot);
-  const header = `🆕 <b>${KIND_NAMES[l.kind]}</b> e'lon #${l.id} — ${esc(l.region)}, ${esc(l.district)}\n` +
-    `👤 <a href="tg://user?id=${l.user_id}">${esc(l.first_name || "Foydalanuvchi")}</a> (ID: <code>${l.user_id}</code>)` +
-    usernameWarning(l.username, profileUsername);
-  let stored = null;
-  const refs = [];
-  for (const admin of adminIds(env)) {
+// Foydalanuvchi yuborgan rasm/videolarni Telegram'ga yuklab, file_id'larini saqlaydi.
+// Yuklash uchun joy kerak: STORAGE_CHAT (ixtiyoriy, maxfiy guruh/kanal ID) yoki birinchi admin chati —
+// admin chatiga ovozsiz yuklanadi va darhol o'chiriladi (chat toza qoladi, e'lonlar «Navbat»da ko'rinadi).
+async function storeMedia(env, l, files) {
+  const targets = env.STORAGE_CHAT ? [env.STORAGE_CHAT] : adminIds(env);
+  for (const chat of targets) {
     try {
-      if (!stored) {
-        const fd = new FormData();
-        fd.append("chat_id", String(admin));
-        fd.append("media", JSON.stringify(mediaItems(files.map((f, i) => ({ type: f.type, media: `attach://f${i}` })), cap)));
-        files.forEach((f, i) => fd.append(`f${i}`, f.file, f.name));
-        const msgs = await tg(env, "sendMediaGroup", fd);
-        stored = msgs.map((m) => {
-          if (m.video) return { type: "video", file_id: m.video.file_id, thumb: m.video.thumbnail?.file_id || null };
-          if (m.photo) return { type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id };
-          throw new Error("BAD_VIDEO");
-        });
-      } else {
-        await tg(env, "sendMediaGroup", { chat_id: admin, media: mediaItems(stored, cap) });
+      const fd = new FormData();
+      fd.append("chat_id", String(chat));
+      fd.append("disable_notification", "true");
+      fd.append("media", JSON.stringify(mediaItems(files.map((f, i) => ({ type: f.type, media: `attach://f${i}` })), "")));
+      files.forEach((f, i) => fd.append(`f${i}`, f.file, f.name));
+      const msgs = await tg(env, "sendMediaGroup", fd);
+      const stored = msgs.map((m) => {
+        if (m.video) return { type: "video", file_id: m.video.file_id, thumb: m.video.thumbnail?.file_id || null };
+        if (m.photo) return { type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id };
+        throw new Error("BAD_VIDEO");
+      });
+      if (!env.STORAGE_CHAT) {
+        for (const m of msgs) await tgSafe(env, "deleteMessage", { chat_id: chat, message_id: m.message_id });
       }
-      const sent = await tg(env, "sendMessage", { chat_id: admin, text: header + "\nQaroringiz?", parse_mode: "HTML", reply_markup: modKb(l) });
-      refs.push([admin, sent.message_id]);
+      await updateListing(env, l.id, { media: JSON.stringify(stored) });
+      return;
     } catch (e) {
       if (e.message === "BAD_VIDEO") throw e;
-      console.log(`Admin ${admin} ga yuborilmadi: ${e.message}`);
+      console.log(`Rasm ${chat} ga yuklanmadi: ${e.message}`);
     }
   }
-  if (!refs.length) throw new Error("Hech bir adminga yetib bormadi");
-  await updateListing(env, l.id, { media: JSON.stringify(stored), admin_msgs: JSON.stringify(refs) });
+  throw new Error("Rasmlarni yuklab bo'lmadi");
+}
+
+// ---------------------------------------------------------------- Navbat: adminlarga bitta yig'ma xabar
+// Har bir e'lon uchun alohida xabar o'rniga har bir adminda BITTA xabar turadi:
+// «📥 3 ta e'lon, 1 ta chek kutmoqda» + «Ko'rib chiqish» tugmasi (Mini App'dagi Navbat bo'limi).
+//  • yangi so'rov kelsa — eski xabar o'chirilib, yangisi yuboriladi (bildirishnoma keladi);
+//  • so'rov ko'rib chiqilsa — xabar joyida yangilanadi (bezovta qilmaydi), navbat bo'shasa — o'chiriladi;
+//  • tinch soatlarda xabar ovozsiz keladi; tinch soatlar tugagach navbatda hali so'rov bo'lsa — ovozli eslatma.
+const QUIET_DEFAULT = { from: 23, to: 8 };
+const tashkentHour = () => new Date(Date.now() + 5 * 3600e3).getUTCHours();
+async function quietHours(env) {
+  const f = await getSetting(env, "quiet_from", String(QUIET_DEFAULT.from));
+  const t = await getSetting(env, "quiet_to", String(QUIET_DEFAULT.to));
+  if (f === "" || t === "" || f === "off") return null;
+  return { from: Number(f), to: Number(t) };
+}
+async function isQuietNow(env) {
+  const q = await quietHours(env);
+  if (!q || q.from === q.to) return false;
+  const h = tashkentHour();
+  return q.from < q.to ? h >= q.from && h < q.to : h >= q.from || h < q.to;
+}
+async function queueCounts(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT status, COUNT(*) AS n, MIN(created_at) AS oldest FROM listings WHERE status IN (?,?) GROUP BY status"
+  ).bind(S.PENDING, S.PAY_REVIEW).all();
+  const by = Object.fromEntries(results.map((r) => [r.status, r]));
+  const oldest = Math.min(...results.map((r) => r.oldest));
+  return { pending: by[S.PENDING]?.n || 0, pay: by[S.PAY_REVIEW]?.n || 0, oldest: Number.isFinite(oldest) ? oldest : null };
+}
+function queueText(c, quiet) {
+  const lines = ["📥 <b>Tekshiruvni kutmoqda</b>"];
+  if (c.pending) lines.push(`• ${c.pending} ta yangi e'lon`);
+  if (c.pay) lines.push(`• ${c.pay} ta to'lov cheki`);
+  if (c.oldest) {
+    const h = Math.floor((now() - c.oldest) / 3600);
+    lines.push("", `⏱ Eng eskisi: ${h ? h + " soat oldin" : "1 soatdan kam"}`);
+  }
+  lines.push("", "Pastdagi tugma orqali ilovada ko'rib chiqing.");
+  if (quiet) lines.push("🌙 Tinch soatlar — xabar ovozsiz keldi.");
+  return lines.join("\n");
+}
+// notify: true — yangi so'rov keldi (adminga bildirishnoma kerak); resend: true — eslatma (cron)
+async function refreshQueueNotice(env, { notify = false, resend = false } = {}) {
+  const c = await queueCounts(env);
+  const total = c.pending + c.pay;
+  const prev = Number(await getSetting(env, "q_total", 0));
+  const quiet = await isQuietNow(env);
+  const fresh = (notify && total > prev) || resend;
+  const app = await getSetting(env, "app_url");
+  const kb = app ? { inline_keyboard: [[{ text: "📋 Ko'rib chiqish", web_app: { url: app + "/#queue" } }]] } : undefined;
+  const text = queueText(c, quiet && fresh);
+  for (const admin of adminIds(env)) {
+    const key = `qmsg:${admin}`;
+    const mid = Number(await getSetting(env, key, 0));
+    if (!total) {
+      if (mid) await tgSafe(env, "deleteMessage", { chat_id: admin, message_id: mid });
+      if (mid) await setSetting(env, key, null);
+      continue;
+    }
+    if (mid && !fresh) {
+      try {
+        await tg(env, "editMessageText", { chat_id: admin, message_id: mid, text, parse_mode: "HTML", reply_markup: kb });
+        continue;
+      } catch (e) {
+        if (/not modified/.test(e.message)) continue;
+        // xabar o'chirilgan bo'lsa — yangisi yuboriladi (pastda)
+      }
+    }
+    if (mid) await tgSafe(env, "deleteMessage", { chat_id: admin, message_id: mid });
+    const sent = await tgSafe(env, "sendMessage", { chat_id: admin, text, parse_mode: "HTML", reply_markup: kb, disable_notification: quiet });
+    if (sent) await setSetting(env, key, sent.message_id);
+  }
+  await setSetting(env, "q_total", total);
+  if (fresh) {
+    await setSetting(env, "q_notified_at", now());
+    await setSetting(env, "q_quiet_pending", quiet && total ? 1 : null); // tinch soatda kelgan — ertalab ovozli eslatiladi
+  }
+  return c;
+}
+
+// Navbatdagi qaror (Mini App'dan ham, eski bot tugmalaridan ham shu funksiya chaqiriladi).
+// action: approve | reject | pay_ok | pay_no.  Natija: { ok, text } yoki { error }
+async function moderate(env, l, action, reasonKey, who) {
+  const id = l.id;
+  if (action === "approve" || action === "reject") {
+    if (l.status !== S.PENDING) return { error: "Bu e'lon allaqachon ko'rib chiqilgan." };
+    if (action === "reject") {
+      const reason = REJECT_REASONS[reasonKey] || REJECT_REASONS.rules;
+      if (!(await changeStatus(env, id, S.PENDING, S.REJECTED, { reject_reason: reason }))) return { error: "Boshqa admin ulgurdi." };
+      await tgSafe(env, "sendMessage", {
+        chat_id: l.user_id,
+        text: `😔 E'loningiz (#${id}) qabul qilinmadi.\nSabab: ${reason}\n\nTo'g'irlab, ilova orqali qayta yuborishingiz mumkin.`,
+      });
+      return { ok: true, text: `❌ #${id} rad etildi: ${reason} — ${who}` };
+    }
+    if (l.kind === "hadya") {
+      if (!(await changeStatus(env, id, S.PENDING, S.PUBLISHING))) return { error: "Boshqa admin ulgurdi." };
+      try {
+        const link = await publish(env, id);
+        return { ok: true, text: `✅ #${id} kanalga joylandi — ${who}\n${link}`, link };
+      } catch (e) {
+        await updateListing(env, id, { status: S.PENDING });
+        return { error: `Kanalga joylanmadi: ${e.message}`.slice(0, 190) };
+      }
+    }
+    if (!(await getSetting(env, "card"))) return { error: "Avval karta raqamini kiriting: admin panel → To'lov sozlamalari yoki /karta" };
+    if (!(await changeStatus(env, id, S.PENDING, S.AWAIT_PAY))) return { error: "Boshqa admin ulgurdi." };
+    await askPayment(env, l);
+    return { ok: true, text: `✅ #${id} ma'qullandi, to'lov kutilmoqda — ${who}` };
+  }
+  if (action === "pay_ok" || action === "pay_no") {
+    if (l.status !== S.PAY_REVIEW) return { error: "Bu chek allaqachon ko'rib chiqilgan." };
+    if (action === "pay_no") {
+      if (!(await changeStatus(env, id, S.PAY_REVIEW, S.AWAIT_PAY, { receipt_file_id: null }))) return { error: "Boshqa admin ulgurdi." };
+      await tgSafe(env, "sendMessage", {
+        chat_id: l.user_id,
+        text: `⚠️ E'lon #${id} uchun yuborilgan chek tasdiqlanmadi. Pul tushganini tekshirib, to'g'ri chekni qayta yuboring.`,
+      });
+      return { ok: true, text: `❌ #${id} cheki rad etildi — ${who}` };
+    }
+    if (!(await changeStatus(env, id, S.PAY_REVIEW, S.PUBLISHING))) return { error: "Boshqa admin ulgurdi." };
+    try {
+      const link = await publish(env, id);
+      return { ok: true, text: `✅ #${id}: to'lov tasdiqlandi va kanalga joylandi — ${who}\n${link}`, link };
+    } catch (e) {
+      await updateListing(env, id, { status: S.PAY_REVIEW });
+      return { error: `Kanalga joylanmadi: ${e.message}`.slice(0, 190) };
+    }
+  }
+  return { error: "Noma'lum amal." };
 }
 
 async function askPayment(env, l) {
@@ -886,6 +1013,7 @@ async function adminSummary(env) {
     "/narx 7000 — pullik e'lon narxini o'zgartirish\n" +
     "/karta 8600123412341234 Ism Familiya — to'lov kartasi\n" +
     "Kanaldagi eski postni ilovaga qo'shish yoki boshqarish — postni shu botga forward qiling\n" +
+    "Yangi e'lonlar va cheklar — ilovadagi Admin → Navbat bo'limida\n" +
     "/berilgan — berilgan/sotilgan eski postlarni statistikaga kiritish rejimi\n" +
     "/oddiy — rejimni o'chirish\n" +
     "/ban 123456789 yoki /ban @username — foydalanuvchini bloklash\n" +
@@ -923,21 +1051,8 @@ async function attachReceipt(env, chatId, l, fileId, isDoc) {
   if (!(await changeStatus(env, l.id, S.AWAIT_PAY, S.PAY_REVIEW, { receipt_file_id: fileId }))) {
     return tg(env, "sendMessage", { chat_id: chatId, text: "Bu e'lon uchun chek allaqachon yuborilgan." });
   }
-  const who = l.username ? `@${esc(l.username)}` : esc(l.first_name || "Foydalanuvchi");
-  const cap = `💳 Chek: e'lon #${l.id} (${KIND_NAMES[l.kind]})\nSumma: ${fmtSum(l.price_due || 0)}\n` +
-    `Kimdan: ${who} (<code>${l.user_id}</code>)`;
-  const refs = [];
-  for (const admin of adminIds(env)) {
-    const r = await tgSafe(env, isDoc ? "sendDocument" : "sendPhoto", {
-      chat_id: admin, [isDoc ? "document" : "photo"]: fileId, caption: cap, parse_mode: "HTML", reply_markup: payKb(l.id),
-    });
-    if (r) refs.push([admin, r.message_id]);
-  }
-  await updateListing(env, l.id, { pay_msgs: JSON.stringify(refs) });
-  if (!refs.length) {
-    await changeStatus(env, l.id, S.PAY_REVIEW, S.AWAIT_PAY, { receipt_file_id: null });
-    return tg(env, "sendMessage", { chat_id: chatId, text: "Chekni adminga yetkazib bo'lmadi. Birozdan keyin qayta yuboring." });
-  }
+  // Chek adminlarga alohida yuborilmaydi — Mini App'dagi «Navbat»da ko'rinadi, botda yig'ma xabar yangilanadi
+  await refreshQueueNotice(env, { notify: true });
   return tg(env, "sendMessage", { chat_id: chatId, text: "🧾 Chek qabul qilindi. Admin tekshirgach, e'loningiz kanalga joylanadi." });
 }
 
@@ -1054,33 +1169,12 @@ async function onCallback(env, cq) {
       await setKb(modKb(l));
       return answer();
     }
-    if (a === "r") {
-      const reason = REJECT_REASONS[extra] || REJECT_REASONS.rules;
-      if (!(await changeStatus(env, id, S.PENDING, S.REJECTED, { reject_reason: reason }))) return answer("Boshqa admin ulgurdi.", true);
-      await done(`❌ #${id} rad etildi: ${reason} — ${who}`, "admin_msgs", l);
-      await tgSafe(env, "sendMessage", {
-        chat_id: l.user_id,
-        text: `😔 E'loningiz (#${id}) qabul qilinmadi.\nSabab: ${reason}\n\nTo'g'irlab, ilova orqali qayta yuborishingiz mumkin.`,
-      });
-      return answer("Rad etildi");
-    }
-    if (a === "ok") {
-      if (l.kind === "hadya") {
-        if (!(await changeStatus(env, id, S.PENDING, S.PUBLISHING))) return answer("Boshqa admin ulgurdi.", true);
-        try {
-          const link = await publish(env, id);
-          await done(`✅ #${id} kanalga joylandi — ${who}\n${link}`, "admin_msgs", l);
-          return answer("Joylandi");
-        } catch (e) {
-          await updateListing(env, id, { status: S.PENDING });
-          return answer(`Kanalga joylanmadi: ${e.message}`.slice(0, 190), true);
-        }
-      }
-      if (!(await getSetting(env, "card"))) return answer("Avval karta raqamini kiriting: /karta", true);
-      if (!(await changeStatus(env, id, S.PENDING, S.AWAIT_PAY))) return answer("Boshqa admin ulgurdi.", true);
-      await askPayment(env, l);
-      await done(`✅ #${id} ma'qullandi, to'lov kutilmoqda — ${who}`, "admin_msgs", l);
-      return answer("Foydalanuvchiga to'lov ma'lumoti yuborildi");
+    if (a === "r" || a === "ok") {
+      const res = await moderate(env, l, a === "r" ? "reject" : "approve", extra, who);
+      if (res.error) return answer(res.error, true);
+      await done(res.text, "admin_msgs", l);
+      await refreshQueueNotice(env);
+      return answer(a === "r" ? "Rad etildi" : "Bajarildi");
     }
   }
 
@@ -1090,25 +1184,12 @@ async function onCallback(env, cq) {
       await setKb(null);
       return answer("Bu chek allaqachon ko'rib chiqilgan.", true);
     }
-    if (a === "no") {
-      if (!(await changeStatus(env, id, S.PAY_REVIEW, S.AWAIT_PAY, { receipt_file_id: null }))) return answer("Boshqa admin ulgurdi.", true);
-      await done(`❌ #${id} cheki rad etildi — ${who}`, "pay_msgs", l);
-      await tgSafe(env, "sendMessage", {
-        chat_id: l.user_id,
-        text: `⚠️ E'lon #${id} uchun yuborilgan chek tasdiqlanmadi. Pul tushganini tekshirib, to'g'ri chekni qayta yuboring.`,
-      });
-      return answer();
-    }
-    if (a === "ok") {
-      if (!(await changeStatus(env, id, S.PAY_REVIEW, S.PUBLISHING))) return answer("Boshqa admin ulgurdi.", true);
-      try {
-        const link = await publish(env, id);
-        await done(`✅ #${id}: to'lov tasdiqlandi va kanalga joylandi — ${who}\n${link}`, "pay_msgs", l);
-        return answer("Joylandi");
-      } catch (e) {
-        await updateListing(env, id, { status: S.PAY_REVIEW });
-        return answer(`Kanalga joylanmadi: ${e.message}`.slice(0, 190), true);
-      }
+    if (a === "no" || a === "ok") {
+      const res = await moderate(env, l, a === "ok" ? "pay_ok" : "pay_no", null, who);
+      if (res.error) return answer(res.error, true);
+      await done(res.text, "pay_msgs", l);
+      await refreshQueueNotice(env);
+      return answer(a === "ok" ? "Joylandi" : "");
     }
   }
   return answer();
@@ -1411,13 +1492,16 @@ async function apiSubmit(env, request) {
   const id = ins.meta.last_row_id;
 
   try {
-    await sendToAdmins(env, await getListing(env, id), files, user.username || null);
+    await storeMedia(env, await getListing(env, id), files);
   } catch (e) {
     console.log("Adminlarga yuborilmadi:", e.message);
     await env.DB.prepare("DELETE FROM listings WHERE id=?").bind(id).run();
     if (e.message === "BAD_VIDEO") return err("Video formati mos kelmadi. MP4 video yoki rasm yuboring.");
     return err("Server xatosi. Birozdan keyin qayta urinib ko'ring.", 500);
   }
+  const origin = new URL(request.url).origin;
+  if ((await getSetting(env, "app_url")) !== origin) await setSetting(env, "app_url", origin);
+  await refreshQueueNotice(env, { notify: true });
   const note = kind === "hadya" ? "" : ` Ma'qullansa, ${fmtSum(await getPrice(env))} to'lov qilasiz.`;
   await tgSafe(env, "sendMessage", { chat_id: user.id, text: `📨 ${KIND_NAMES[kind]} e'loningiz (#${id}) adminga yuborildi.${note}` });
   return json({ ok: true, id });
@@ -1461,6 +1545,8 @@ async function apiAdminOverview(env, request) {
     counts: byStatus, today, users: st.users,
     settings: {
       price: await getPrice(env), card: await getSetting(env, "card", ""), card_owner: await getSetting(env, "card_owner", ""),
+      quiet_from: await getSetting(env, "quiet_from", String(QUIET_DEFAULT.from)),
+      quiet_to: await getSetting(env, "quiet_to", String(QUIET_DEFAULT.to)),
     },
     queue: await Promise.all(queue.map(async (r) => {
       const l = parseRow(r);
@@ -1480,7 +1566,96 @@ async function apiAdminSettings(env, request) {
   await setSetting(env, "price", +price);
   if (digits) await setSetting(env, "card", digits.match(/.{4}/g).join(" "));
   await setSetting(env, "card_owner", String(b.card_owner ?? "").trim().slice(0, 60));
+  // Tinch soatlar: 0–23 yoki "off" (o'chirilgan)
+  if (b.quiet_from !== undefined) {
+    const hour = (v) => (v === "off" ? "off" : /^\d{1,2}$/.test(String(v)) && +v < 24 ? String(+v) : null);
+    const f = hour(b.quiet_from), t = hour(b.quiet_to);
+    if (f === null || t === null) return err("Tinch soatlarni 0–23 oralig'ida tanlang.");
+    await setSetting(env, "quiet_from", f === "off" || t === "off" ? "off" : f);
+    await setSetting(env, "quiet_to", f === "off" || t === "off" ? "off" : t);
+  }
   return json({ ok: true, price_text: fmtSum(price) });
+}
+
+// ---------------------------------------------------------------- Admin: Navbat (Mini App)
+// E'lon ma'lumotlari jadvali (e'lon sahifasi va navbat kartochkasi uchun bir xil)
+function detailRows(l) {
+  const d = l.data;
+  const rows = l.kind === "reklama"
+    ? [["Nomi", d.title], ["Tavsif", d.about], ["Narxi", priceText(l)]]
+    : [["Zoti", d.breed || "Noma'lum"], ["Yoshi", d.age], ["Jinsi", GENDER[d.gender] || "Noma'lum"],
+       ["Sog'lig'i", healthText(d) || "Noma'lum"], ["Dostafka", DELIVERY[d.delivery] || "Noma'lum"], ["Narxi", priceText(l)]];
+  rows.push(["Manzil", placeText(l)]);
+  if (d.extra) rows.push(["Qo'shimcha", d.extra]);
+  return rows;
+}
+const receiptKey = (env, id) => mediaKey(env, "r" + id);
+
+async function apiAdminQueue(env, request) {
+  if (!(await requireAdmin(env, request))) return err("Bu bo'lim faqat adminlar uchun.", 403);
+  const { results } = await env.DB.prepare(
+    "SELECT l.*, u.username AS profile_username, u.first_name AS profile_name FROM listings l LEFT JOIN users u ON u.id = l.user_id " +
+    "WHERE l.status IN (?,?) ORDER BY l.created_at LIMIT 50"
+  ).bind(S.PENDING, S.PAY_REVIEW).all();
+  const items = await Promise.all(results.map(async (r) => {
+    const l = parseRow(r);
+    const key = await mediaKey(env, l.id);
+    const warn = l.username && (!r.profile_username || r.profile_username.toLowerCase() !== l.username.toLowerCase())
+      ? `Username egasiniki bo'lmasligi mumkin: formada @${l.username}, ${r.profile_username ? "profilda @" + r.profile_username : "profilda username yo'q"}` : null;
+    return {
+      id: l.id, kind: l.kind, status: l.status, title: shortTitle(l), place: placeText(l), rows: detailRows(l),
+      media: l.media.map((m, i) => ({ type: m.type, url: `api/media/${l.id}/${i}?k=${key}`, thumb: `api/media/${l.id}/${i}?thumb=1&k=${key}` })),
+      user: { id: l.user_id, name: r.profile_name || l.first_name || "", profile: r.profile_username || "" },
+      contact: { phone: l.data.phone ? fmtPhone(l.data.phone) : "", username: l.username || "" },
+      warn, hours: Math.floor((now() - l.created_at) / 3600),
+      price_due: l.price_due ? fmtSum(l.price_due) : null,
+      receipt: l.status === S.PAY_REVIEW && l.receipt_file_id ? `api/receipt/${l.id}?k=${await receiptKey(env, l.id)}` : null,
+    };
+  }));
+  return json({
+    pending: items.filter((i) => i.status === S.PENDING),
+    payments: items.filter((i) => i.status === S.PAY_REVIEW),
+    reasons: REJECT_REASONS, card_set: !!(await getSetting(env, "card")), price_text: fmtSum(await getPrice(env)),
+  });
+}
+
+async function apiAdminDecide(env, request, id) {
+  const admin = await requireAdmin(env, request);
+  if (!admin) return err("Bu amal faqat adminlar uchun.", 403);
+  const l = await getListing(env, id);
+  if (!l) return err("E'lon topilmadi.", 404);
+  const { action, reason } = await request.json().catch(() => ({}));
+  const who = [admin.first_name, admin.last_name].filter(Boolean).join(" ") || "admin";
+  const res = await moderate(env, l, action, reason, who);
+  if (res.error) return err(res.error, 409);
+  // Bu e'lon bo'yicha eski bot xabarlari bo'lsa (yangilanishdan oldin kelganlar) — ularning tugmalari olib tashlanadi
+  for (const field of ["admin_msgs", "pay_msgs"]) {
+    let refs = [];
+    try { refs = JSON.parse(l[field] || "[]"); } catch {}
+    for (const [c, m] of refs) {
+      await tgSafe(env, field === "pay_msgs" ? "editMessageCaption" : "editMessageText", { chat_id: c, message_id: m, [field === "pay_msgs" ? "caption" : "text"]: res.text });
+    }
+  }
+  const c = await refreshQueueNotice(env);
+  return json({ ok: true, text: res.text, link: res.link || null, left: c.pending + c.pay });
+}
+
+// To'lov cheki rasmi (faqat admin, maxfiy kalit bilan)
+async function apiReceipt(env, url, id) {
+  if (url.searchParams.get("k") !== (await receiptKey(env, id))) return new Response("Topilmadi", { status: 404 });
+  const l = await getListing(env, id);
+  if (!l?.receipt_file_id) return new Response("Topilmadi", { status: 404 });
+  let path;
+  try {
+    path = await telegramFilePath(env, l.receipt_file_id);
+  } catch {
+    return new Response("Topilmadi", { status: 404 });
+  }
+  const up = await fetch(`${env.TG_API || "https://api.telegram.org"}/file/bot${env.BOT_TOKEN}/${path}`);
+  if (!up.ok) return new Response("Topilmadi", { status: 404 });
+  const ext = String(path).split(".").pop().toLowerCase();
+  const type = { pdf: "application/pdf", png: "image/png", webp: "image/webp" }[ext] || "image/jpeg";
+  return new Response(up.body, { headers: { "content-type": type, "cache-control": "private, max-age=3600" } });
 }
 
 // ---------------------------------------------------------------- Admin: e'lonni boshqarish (Mini App ichidan)
@@ -1670,6 +1845,7 @@ async function setup(env, origin) {
       // drop_pending_updates: false — navbatda turgan xabarlar o'chib ketmasin
       allowed_updates: ["message", "callback_query", "channel_post"], drop_pending_updates: false,
     });
+    await setSetting(env, "app_url", origin);
     ok("Bot shu serverga ulandi (webhook)");
   } catch (e) {
     bad("Webhook o'rnatilmadi: " + e.message);
@@ -1787,24 +1963,17 @@ async function remindPayments(env) {
   }
 }
 
-// Admin uzoq vaqt ko'rmagan e'lonlar haqida eslatma (har ADMIN_REMIND_HOURS soatda ko'pi bilan bir marta)
+// Navbat eslatmasi: so'rovlar ADMIN_REMIND_HOURS soatdan beri ko'rilmasa yoki tinch soatlarda kelgan bo'lsa
+// (tinch soatlar tugagach) — yig'ma xabar qayta, ovoz bilan yuboriladi.
 async function remindAdmins(env) {
-  if (!canSpend(env, 4 + adminIds(env).length)) return;
-  const last = Number(await getSetting(env, "admin_reminded", 0));
-  if (now() - last < ADMIN_REMIND_HOURS * 3600 - 300) return;
-  const old = now() - ADMIN_REMIND_HOURS * 3600;
-  const [pending, pay] = await Promise.all([
-    env.DB.prepare("SELECT COUNT(*) AS n FROM listings WHERE status=? AND created_at<?").bind(S.PENDING, old).first("n"),
-    env.DB.prepare("SELECT COUNT(*) AS n FROM listings WHERE status=?").bind(S.PAY_REVIEW).first("n"),
-  ]);
-  if (!pending && !pay) return;
-  const lines = ["⏰ <b>Ko'rib chiqilmagan e'lonlar bor</b>"];
-  if (pending) lines.push(`• ${pending} ta e'lon ${ADMIN_REMIND_HOURS} soatdan ko'p tekshiruv kutmoqda`);
-  if (pay) lines.push(`• ${pay} ta to'lov cheki tekshirilmagan`);
-  lines.push("", "Tugmalar avvalgi xabarlarda. Ro'yxat: /admin");
-  let sent = 0;
-  for (const admin of adminIds(env)) if ((await tgSend(env, { chat_id: admin, text: lines.join("\n"), parse_mode: "HTML" })).ok) sent++;
-  if (sent) await setSetting(env, "admin_reminded", now());
+  if (!canSpend(env, 8 + adminIds(env).length * 3)) return;
+  if (await isQuietNow(env)) return;
+  const c = await queueCounts(env);
+  if (!c.pending && !c.pay) return;
+  const last = Number(await getSetting(env, "q_notified_at", 0));
+  const quietPending = await getSetting(env, "q_quiet_pending");
+  if (!quietPending && now() - last < ADMIN_REMIND_HOURS * 3600 - 300) return;
+  await refreshQueueNotice(env, { resend: true });
 }
 
 // 30 kunlik tekshiruv: egasidan «Hali dolzarbmi?» deb so'raladi; ANSWER_DAYS ichida javob bo'lmasa
@@ -1950,6 +2119,9 @@ export default {
       if (method === "GET" && (m = path.match(/^\/api\/media\/(\d+)\/(\d+)$/)))
         return await apiMedia(env, request, ctx, url, +m[1], +m[2]);
       if (method === "POST" && (m = path.match(/^\/api\/my\/(\d+)\/close$/))) return await apiClose(env, request, +m[1]);
+      if (method === "GET" && path === "/api/admin/queue") return await apiAdminQueue(env, request);
+      if (method === "POST" && (m = path.match(/^\/api\/admin\/queue\/(\d+)$/))) return await apiAdminDecide(env, request, +m[1]);
+      if (method === "GET" && (m = path.match(/^\/api\/receipt\/(\d+)$/))) return await apiReceipt(env, url, +m[1]);
       if (method === "POST" && (m = path.match(/^\/api\/admin\/listings\/(\d+)\/(status|edit|delete)$/))) {
         return await { status: apiAdminStatus, edit: apiAdminEdit, delete: apiAdminDelete }[m[2]](env, request, +m[1]);
       }
