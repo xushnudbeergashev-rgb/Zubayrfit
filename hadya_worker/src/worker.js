@@ -100,9 +100,10 @@ const MIGRATIONS = [
   // admin «Qaytarish» bosgandagi oxirgi shikoyat raqami (rowid): faqat undan keyingi shikoyatlar sanaladi
   "ALTER TABLE listings ADD COLUMN reports_after INTEGER",
   "CREATE INDEX IF NOT EXISTS ix_reports_user ON reports(user_id, created_at)",
+  "ALTER TABLE listings ADD COLUMN close_reply_msg INTEGER", // kanaldagi «✅ Berildi» javobi (qayta faollashtirilsa o'chiriladi)
 ];
 // Sxema o'zgarsa shu raqam oshiriladi — shunda migratsiyalar bir marta qayta ishga tushadi
-const SCHEMA_VERSION = "3";
+const SCHEMA_VERSION = "4";
 let schemaReady = false;
 async function ensureSchema(env, force = false) {
   if ((schemaReady && !force) || !env.DB) return;
@@ -481,12 +482,16 @@ async function publish(env, id) {
   return link;
 }
 
-async function closeListing(env, l, status) {
-  if (!(await changeStatus(env, l.id, OPEN_STATUSES, status, { closed_at: now() }))) return false;
+// Kanaldagi postni e'lonning hozirgi holatiga moslab qayta yozadi.
+// closedAs: "given" | "sold" | "closed" — yopilgan ko'rinish (kontaktlarsiz); null — faol ko'rinish.
+async function refreshChannelPost(env, l, closedAs = null) {
+  if (!l.channel_msg_id) return;
   if (l.data.raw !== undefined) {
     // Kanaldan import qilingan post: asl matn va formatlash saqlanadi, faqat kontakt qatorlari almashtiriladi
     const isCap = l.media.length > 0;
-    const { text, entities } = closedRaw(l, status, isCap ? 1024 : 4096);
+    const { text, entities } = closedAs
+      ? closedRaw(l, closedAs, isCap ? 1024 : 4096)
+      : { text: String(l.data.raw).slice(0, isCap ? 1024 : 4096), entities: Array.isArray(l.data.entities) ? l.data.entities : [] };
     await tgSafe(env, isCap ? "editMessageCaption" : "editMessageText", {
       chat_id: env.CHANNEL, message_id: l.channel_msg_id, [isCap ? "caption" : "text"]: text,
       ...(entities.length ? { [isCap ? "caption_entities" : "entities"]: entities } : {}),
@@ -494,13 +499,36 @@ async function closeListing(env, l, status) {
   } else {
     const bot = await botUsername(env);
     await tgSafe(env, "editMessageCaption", {
-      chat_id: env.CHANNEL, message_id: l.channel_msg_id, caption: caption(env, l, bot, status), parse_mode: "HTML",
+      chat_id: env.CHANNEL, message_id: l.channel_msg_id, caption: caption(env, l, bot, closedAs), parse_mode: "HTML",
     });
   }
-  await tgSafe(env, "sendMessage", {
-    chat_id: env.CHANNEL, text: CLOSED_REPLY[status],
-    reply_parameters: { message_id: l.channel_msg_id, allow_sending_without_reply: true },
-  });
+}
+
+async function closeListing(env, l, status) {
+  if (!(await changeStatus(env, l.id, OPEN_STATUSES, status, { closed_at: now() }))) return false;
+  await refreshChannelPost(env, l, status);
+  // «Berildi»/«Sotildi» — kanalga qisqa javob ham yoziladi (quvonchli xabar).
+  // «Dolzarb emas» — faqat post tahrirlanadi, kanalga alohida xabar yuborilmaydi.
+  if (status !== "closed") {
+    const reply = await tgSafe(env, "sendMessage", {
+      chat_id: env.CHANNEL, text: CLOSED_REPLY[status],
+      reply_parameters: { message_id: l.channel_msg_id, allow_sending_without_reply: true },
+    });
+    // e'lon qayta faol qilinsa, bu javob o'chiriladi
+    if (reply) await updateListing(env, l.id, { close_reply_msg: reply.message_id });
+  }
+  return true;
+}
+
+// Yopilgan e'lonni (berildi / sotildi / dolzarb emas / shikoyat sabab yashirilgan) yana faol qilish — faqat admin.
+async function reopenListing(env, l) {
+  const fields = { closed_at: null, check_at: now() + CHECK_DAYS * DAY, asked_at: null, ask_tries: null, ask_blocked: null, close_reply_msg: null };
+  if (l.status === S.REPORTED) {
+    fields.reports_after = await env.DB.prepare("SELECT COALESCE(MAX(rowid), 0) AS n FROM reports").first("n");
+  }
+  if (!(await changeStatus(env, l.id, [S.GIVEN, S.SOLD, S.CLOSED, S.REPORTED], S.PUBLISHED, fields))) return false;
+  if (l.status !== S.REPORTED) await refreshChannelPost(env, l, null); // kontaktlar postga qaytadi
+  if (l.close_reply_msg) await tgSafe(env, "deleteMessage", { chat_id: env.CHANNEL, message_id: l.close_reply_msg });
   return true;
 }
 
@@ -540,7 +568,16 @@ function detectPlace(text, manzil) {
   return { region: region ? region.name : "", district: "" };
 }
 
-function parsePost(text, skipNames) {
+// E'lon turini aniqlovchi hashtaglar (aynan shu so'zlar; #hadyagamushuklar kabi kanal teglari hisobga olinmaydi)
+const KIND_TAGS = { reklama: ["#reklama"], sotuv: ["#sotiladi", "#sotuv"], hadya: ["#hadyaga", "#hadya", "#bepul"] };
+function kindByTags(text) {
+  const tags = (String(text).match(/#[\p{L}\p{N}_]+/gu) || []).map((x) => normTxt(x).replace(/ /g, "_"));
+  return Object.keys(KIND_TAGS).find((k) => KIND_TAGS[k].some((tag) => tags.includes(tag))) || null;
+}
+
+// strict = true — faqat e'lon hashtagi bo'lgan post qabul qilinadi (kanalga avtomatik joylanganlar uchun).
+// strict = false — admin o'zi forward qilgan post: hashtag bo'lmasa, matndagi so'zlarga qarab taxmin qilinadi.
+function parsePost(text, skipNames, strict = false) {
   const t = String(text || "");
   const low = normTxt(t);
   const lines = t.split("\n");
@@ -551,8 +588,12 @@ function parsePost(text, skipNames) {
     }
     return "";
   };
-  let kind = /#reklama/.test(low) ? "reklama" : /#sotil|#sotuv/.test(low) ? "sotuv" : /#hadya/.test(low) ? "hadya" : null;
-  if (!kind) kind = /hadya|bepul|tekin/.test(low) ? "hadya" : /narx/.test(low) ? "sotuv" : null;
+  let kind = kindByTags(t);
+  if (!kind && !strict) {
+    // @kanal / t.me havolalari va teglar olib tashlanadi — aks holda «@Hadyagamushuklar» ham «hadya» deb topilardi
+    const plain = low.replace(/@[\w.]+|t\.me\/\S+|#\S+/g, " ");
+    kind = /\bhadya|\bbepul|\btekin/.test(plain) ? "hadya" : /\bnarx/.test(plain) ? "sotuv" : null;
+  }
   if (!kind) return null;
 
   const manzil = field(/manzil|hudud|joy/);
@@ -670,7 +711,7 @@ async function attachAlbumItem(env, m) {
 // "Berilganlar rejimi"da e'lon turi bo'yicha yakuniy holat
 const DONE_STATUS = { hadya: S.GIVEN, sotuv: S.SOLD, reklama: S.CLOSED };
 
-async function importPost(env, m, chMsgId, chUsername, date, doneMode = false) {
+async function importPost(env, m, chMsgId, chUsername, date, doneMode = false, strict = false) {
   const dupId = await env.DB.prepare("SELECT id FROM listings WHERE channel_msg_id=?").bind(chMsgId).first("id");
   if (dupId) {
     let dup = await getListing(env, dupId);
@@ -684,7 +725,7 @@ async function importPost(env, m, chMsgId, chUsername, date, doneMode = false) {
   }
   const text = m.caption || m.text || "";
   const skip = [await botUsername(env), String(env.CHANNEL || "").replace(/^@/, "")];
-  const p = parsePost(text, skip);
+  const p = parsePost(text, skip, strict);
   if (!p) return { error: "Turi aniqlanmadi: postda #hadyaga, #sotiladi yoki #reklama bo'lishi kerak." };
   // Formatlash (qalin, havola...) saqlanadi — e'lon yopilganda kanaldagi post shu bilan qayta yoziladi
   const ents = m.caption_entities || m.entities;
@@ -745,12 +786,16 @@ async function getDoneMode(env, adminId) {
   return until > now();
 }
 
+// Kanalga admin o'zi joylagan post ilovaga FAQAT e'lon bo'lsa qo'shiladi: rasm/video bo'lishi va matnida
+// #hadyaga, #sotiladi yoki #reklama hashtagi bo'lishi shart. Oddiy xabarlar («Assalomu alaykum...»,
+// e'lonlar, reklama bo'lmagan postlar) e'tiborsiz qoldiriladi.
 async function onChannelPost(env, m) {
   const ch = String(env.CHANNEL || "").replace(/^@/, "").toLowerCase();
   if ((m.chat.username || "").toLowerCase() !== ch && String(m.chat.id) !== String(env.CHANNEL)) return;
   if (m.media_group_id && !m.caption) return attachAlbumItem(env, m);
   if (!m.photo && !m.video) return;
-  await importPost(env, m, m.message_id, m.chat.username, m.date);
+  if (!kindByTags(m.caption || "")) return;
+  await importPost(env, m, m.message_id, m.chat.username, m.date, false, true);
 }
 
 // ---------------------------------------------------------------- bot: xabarlar
@@ -1106,10 +1151,16 @@ async function stats(env) {
   return { given, given_month: givenMonth, sold, active_hadya: activeHadya, active_sotuv: activeSotuv, users, top_regions: top.results };
 }
 
-async function apiListings(env, url) {
+// Admin ro'yxatda faol bo'lmagan e'lonlarni ham ko'ra oladi: status=closed (berildi/sotildi/dolzarb emas), reported
+const ADMIN_FILTERS = { published: [S.PUBLISHED], closed: [S.GIVEN, S.SOLD, S.CLOSED], reported: [S.REPORTED] };
+async function apiListings(env, request, url) {
   const q = url.searchParams;
-  let sql = "SELECT * FROM listings WHERE status=?";
-  const args = [S.PUBLISHED];
+  let statuses = [S.PUBLISHED];
+  const want = q.get("status");
+  const admin = want && want !== "published" ? await requireAdmin(env, request) : null;
+  if (admin && ADMIN_FILTERS[want]) statuses = ADMIN_FILTERS[want];
+  let sql = `SELECT * FROM listings WHERE status IN (${statuses.map(() => "?").join(",")})`;
+  const args = [...statuses];
   for (const col of ["kind", "region", "district"]) {
     const v = q.get(col);
     if (v) {
@@ -1118,19 +1169,24 @@ async function apiListings(env, url) {
     }
   }
   const offset = Math.max(0, parseInt(q.get("offset") || "0", 10) || 0);
-  sql += " ORDER BY published_at DESC LIMIT 20 OFFSET ?";
+  sql += ` ORDER BY ${statuses[0] === S.PUBLISHED ? "published_at" : "COALESCE(closed_at, published_at)"} DESC LIMIT 20 OFFSET ?`;
   const { results } = await env.DB.prepare(sql).bind(...args, offset).all();
-  return json({ items: results.map((r) => card(parseRow(r))), more: results.length === 20 });
+  const items = await Promise.all(results.map((r) => privateCard(env, parseRow(r))));
+  return json({ items, more: results.length === 20 });
 }
 
 async function apiDetail(env, request, id) {
   const l = await getListing(env, id);
-  if (!l || !PUBLIC_STATUSES.includes(l.status)) return err("E'lon topilmadi", 404);
+  if (!l) return err("E'lon topilmadi", 404);
+  const auth = await authUser(env, request.headers.get("x-init-data"));
+  const isAdm = !!(auth && isAdmin(env, auth.id));
+  // Admin shikoyat sabab yashirilgan va ilovadan olingan e'lonlarni ham ko'radi
+  if (!PUBLIC_STATUSES.includes(l.status) && !(isAdm && [S.REPORTED, "hidden"].includes(l.status))) return err("E'lon topilmadi", 404);
   const d = l.data;
   const open = l.status === S.PUBLISHED;
   // Kontaktlar (telefon, username) faqat Telegram ichidan ochilgan ilovaga beriladi —
   // shunda skript bilan barcha raqamlarni yig'ib olib bo'lmaydi
-  const viewer = open ? await authUser(env, request.headers.get("x-init-data")) : null;
+  const viewer = open || isAdm ? auth : null;
   let rows, text = null;
   if (d.imported) {
     // Kanaldan import qilingan: asl post matni ko'rsatiladi (yopilgan bo'lsa yoki ko'ruvchi noma'lum bo'lsa — kontaktlarsiz)
@@ -1147,11 +1203,17 @@ async function apiDetail(env, request, id) {
     rows.push(["Manzil", placeText(l)]);
     if (d.extra) rows.push(["Qo'shimcha", d.extra]);
   }
-  const hasContact = open && (l.username || d.phone);
+  const hasContact = (open || isAdm) && (l.username || d.phone);
+  const key = PUBLIC_STATUSES.includes(l.status) ? "" : await mediaKey(env, l.id);
   return json({
-    ...card(l), rows, text,
+    ...card(l, key), rows, text,
     post: l.channel_username ? `https://t.me/${l.channel_username}/${l.channel_msg_id}` : null,
-    media: l.media.map((m, i) => ({ type: m.type, url: `api/media/${l.id}/${i}` })),
+    media: l.media.map((m, i) => ({ type: m.type, url: `api/media/${l.id}/${i}${key ? "?k=" + key : ""}` })),
+    // Admin uchun: tahrirlash formasini to'ldirish uchun xom ma'lumot
+    admin: isAdm ? {
+      kind: l.kind, region: l.region, district: l.district, username: l.username || "", imported: !!d.imported,
+      raw: d.imported ? d.raw : null, data: d.imported ? null : d,
+    } : null,
     contact: hasContact && viewer ? { username: l.username, phone: d.phone ? fmtPhone(d.phone) : null } : null,
     contact_hidden: !!(hasContact && !viewer), // kontakt bor, lekin ko'rish uchun ilovani bot orqali ochish kerak
     mine: !!(viewer && viewer.id === l.user_id),
@@ -1421,6 +1483,88 @@ async function apiAdminSettings(env, request) {
   return json({ ok: true, price_text: fmtSum(price) });
 }
 
+// ---------------------------------------------------------------- Admin: e'lonni boshqarish (Mini App ichidan)
+const ADMIN_EDITABLE = [S.PUBLISHED, S.REPORTED, S.GIVEN, S.SOLD, S.CLOSED];
+
+// Holat: given / sold / closed — yopish (kanaldagi post tahrirlanadi); published — yana faol qilish
+async function apiAdminStatus(env, request, id) {
+  if (!(await requireAdmin(env, request))) return err("Bu amal faqat adminlar uchun.", 403);
+  const l = await getListing(env, id);
+  if (!l || !ADMIN_EDITABLE.includes(l.status)) return err("E'lon topilmadi.", 404);
+  const { status } = await request.json().catch(() => ({}));
+  if (status === S.PUBLISHED) {
+    if (!(await reopenListing(env, l))) return err("E'lon allaqachon faol.");
+  } else {
+    if (!["given", "sold", "closed"].includes(status)) return err("Noto'g'ri holat.");
+    if (status === "given" && l.kind !== "hadya") return err("«Berildi» faqat hadya e'loni uchun.");
+    if (status === "sold" && l.kind !== "sotuv") return err("«Sotildi» faqat sotuv e'loni uchun.");
+    if (!OPEN_STATUSES.includes(l.status)) {
+      // yopilgan e'lonning yopilish turini almashtirish (masalan, «Dolzarb emas» → «Berildi»)
+      if (!(await changeStatus(env, id, [S.GIVEN, S.SOLD, S.CLOSED], status, { closed_at: now() }))) return err("Holati o'zgargan.");
+      await refreshChannelPost(env, l, status);
+    } else if (!(await closeListing(env, l, status))) return err("E'lon holati allaqachon o'zgargan.");
+  }
+  const n = await getListing(env, id);
+  return json({ ok: true, status: n.status, status_text: STATUS_TEXT[n.status] });
+}
+
+// Tahrirlash. Bot joylagan e'lon — maydonlar bo'yicha (kanaldagi post ham yangilanadi).
+// Kanaldan import qilingan e'lon — asl matn tahrirlanadi (kanal postidagi qalin yozuv kabi formatlash yo'qoladi).
+async function apiAdminEdit(env, request, id) {
+  if (!(await requireAdmin(env, request))) return err("Bu amal faqat adminlar uchun.", 403);
+  const l = await getListing(env, id);
+  if (!l || !ADMIN_EDITABLE.includes(l.status)) return err("E'lon topilmadi.", 404);
+  const b = await request.json().catch(() => ({}));
+  const get = (k) => (b[k] === undefined || b[k] === null ? null : String(b[k]));
+  let fields;
+  if (l.data.imported) {
+    const raw = String(b.raw || "").trim();
+    const limit = l.media.length ? 1024 : 4096;
+    if (!raw) return err("Post matni bo'sh bo'lmasin.");
+    if (raw.length > limit) return err(`Post matni ${limit} belgidan oshmasin (hozir ${raw.length}).`);
+    const kind = KINDS[b.kind] ? b.kind : l.kind;
+    const region = String(b.region || ""), district = String(b.district || "");
+    if (region && !findRegion(region)) return err("Hududni tanlang.");
+    if (district && !findRegion(region)?.d.some((x) => x[0] === district)) return err("Tumanni tanlang.");
+    const skip = [await botUsername(env), String(env.CHANNEL || "").replace(/^@/, "")];
+    const p = parsePost(raw, skip) || { data: {}, username: "" };
+    const data = { ...l.data, ...p.data, imported: true, raw };
+    if (raw !== l.data.raw) delete data.entities; // matn o'zgardi — eski formatlash joylari to'g'ri kelmaydi
+    fields = { kind, region, district, data: JSON.stringify(data), username: p.username || l.username || null };
+  } else {
+    const form = { get: (k) => (k === "kind" ? (KINDS[b.kind] ? b.kind : l.kind) : get(k)) };
+    const res = cleanForm(form);
+    if (typeof res === "string") return err(res);
+    const username = res.data.contact_username;
+    delete res.data.contact_username;
+    fields = { kind: res.kind, region: res.region, district: res.district, data: JSON.stringify(res.data), username };
+  }
+  await updateListing(env, id, fields);
+  const n = await getListing(env, id);
+  const closedAs = [S.GIVEN, S.SOLD, S.CLOSED].includes(n.status) ? n.status : null;
+  await refreshChannelPost(env, n, closedAs);
+  return json({ ok: true });
+}
+
+// O'chirish: e'lon ilovadan olinadi; channel=true bo'lsa kanaldagi post ham o'chiriladi
+async function apiAdminDelete(env, request, id) {
+  if (!(await requireAdmin(env, request))) return err("Bu amal faqat adminlar uchun.", 403);
+  const l = await getListing(env, id);
+  if (!l || !ADMIN_EDITABLE.includes(l.status)) return err("E'lon topilmadi.", 404);
+  const { channel } = await request.json().catch(() => ({}));
+  if (!(await changeStatus(env, id, ADMIN_EDITABLE, "hidden", { closed_at: now() }))) return err("Holati o'zgargan.");
+  let channelDeleted = null;
+  if (channel && l.channel_msg_id) {
+    // Albomdagi har bir rasm alohida xabar: bot joylagan albom raqamlari ketma-ket keladi
+    const ids = Array.from({ length: Math.max(1, l.media.length) }, (_, i) => l.channel_msg_id + i);
+    if (l.close_reply_msg) ids.push(l.close_reply_msg);
+    let okN = 0;
+    for (const mid of ids) if (await tgSafe(env, "deleteMessage", { chat_id: env.CHANNEL, message_id: mid })) okN++;
+    channelDeleted = okN > 0;
+  }
+  return json({ ok: true, channel_deleted: channelDeleted });
+}
+
 // ---------------------------------------------------------------- AI yordamchi (OpenAI)
 const AI_PER_DAY = 5;
 function tashkentDay() {
@@ -1543,7 +1687,10 @@ async function setup(env, origin) {
     if (cm.status !== "administrator") bad(`Bot ${env.CHANNEL} kanalida admin emas. Kanal sozlamalaridan botni admin qiling.`);
     else if (cm.can_post_messages === false || cm.can_edit_messages === false)
       bad("Botga kanalda «Xabar joylash» va «Xabarlarni tahrirlash» huquqlarini bering.");
-    else ok(`Kanal ${env.CHANNEL}: bot admin, huquqlar to'g'ri`);
+    else {
+      ok(`Kanal ${env.CHANNEL}: bot admin, huquqlar to'g'ri`);
+      if (cm.can_delete_messages === false) warn("Admin ilovadan kanaldagi postni o'chira olishi uchun botga «Xabarlarni o'chirish» huquqini ham bering.");
+    }
   } catch (e) {
     bad(`Kanal ${env.CHANNEL} topilmadi yoki bot unda yo'q: ${e.message}`);
   }
@@ -1789,7 +1936,7 @@ export default {
           admin: String(env.ADMIN_CONTACT || "").replace(/^@/, ""), bot: await botUsername(env).catch(() => ""),
           report_reasons: REPORT_REASONS });
       }
-      if (method === "GET" && path === "/api/listings") return await apiListings(env, url);
+      if (method === "GET" && path === "/api/listings") return await apiListings(env, request, url);
       if (method === "GET" && path === "/api/stats") return json(await stats(env));
       if (method === "GET" && path === "/api/my") return await apiMy(env, request);
       if (method === "GET" && path === "/api/me") return await apiMe(env, request);
@@ -1803,6 +1950,9 @@ export default {
       if (method === "GET" && (m = path.match(/^\/api\/media\/(\d+)\/(\d+)$/)))
         return await apiMedia(env, request, ctx, url, +m[1], +m[2]);
       if (method === "POST" && (m = path.match(/^\/api\/my\/(\d+)\/close$/))) return await apiClose(env, request, +m[1]);
+      if (method === "POST" && (m = path.match(/^\/api\/admin\/listings\/(\d+)\/(status|edit|delete)$/))) {
+        return await { status: apiAdminStatus, edit: apiAdminEdit, delete: apiAdminDelete }[m[2]](env, request, +m[1]);
+      }
       return new Response("Topilmadi", { status: 404 });
     } catch (e) {
       console.log("Xato:", e.stack || e.message);

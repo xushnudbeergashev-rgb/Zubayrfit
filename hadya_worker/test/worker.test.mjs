@@ -341,7 +341,7 @@ test("import qilingan post yopilganda formatlash (entities) saqlanadi", async ()
 
 test("sxema versiyasi saqlanadi (keyingi ishga tushishda migratsiya qayta ishlamaydi)", async () => {
   const v = env.DB.raw.prepare("SELECT value FROM settings WHERE key='schema_v'").get();
-  assert.equal(v.value, "3");
+  assert.equal(v.value, "4");
 });
 
 // ---------------------------------------------------------------- 2-bosqich: tuzatishlar
@@ -472,4 +472,121 @@ test("byudjet: bitta ishga tushishda chegaradan oshmaydi, qolganlari keyingi saf
   assert.ok(first > 0 && first < 30, `birinchi safar so'ralganlar: ${first}`);
   for (let i = 0; i < 6; i++) await runCron();
   assert.equal(asked(), 30, "keyingi ishga tushishlarda hammasi so'raldi");
+});
+
+// ---------------------------------------------------------------- 3-bosqich: admin boshqaruvi va kanal
+const CH = "@Hadyagamushuklar";
+const toChannel = (method) => callsOf(method).filter((c) => c.body.chat_id === CH);
+const ADM = { id: ADMIN, first_name: "Admin" };
+
+test("«Dolzarb emas»: post tahrirlanadi, kanalga alohida xabar yuborilmaydi; «Berildi»da javob yoziladi", async () => {
+  const a = insertPublished(USER.id), b = insertPublished(USER.id);
+  let n = toChannel("sendMessage").length;
+  let j = await reqJson(`/api/my/${a}/close`, { method: "POST", user: USER, body: { status: "closed" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(toChannel("sendMessage").length, n, "kanalga xabar ketmasligi kerak");
+  assert.match(lastCall("editMessageCaption").body.caption, /dolzarb emas/);
+  n = toChannel("sendMessage").length;
+  j = await reqJson(`/api/my/${b}/close`, { method: "POST", user: USER, body: { status: "given" } });
+  assert.equal(toChannel("sendMessage").length, n + 1);
+  assert.ok(row(b).close_reply_msg, "javob xabari raqami saqlanadi");
+});
+
+test("admin: berilgan e'lonni yana faol qiladi — kontaktlar qaytadi, «Berildi» javobi o'chiriladi", async () => {
+  const id = insertPublished(USER.id);
+  await reqJson(`/api/my/${id}/close`, { method: "POST", user: USER, body: { status: "given" } });
+  const reply = row(id).close_reply_msg;
+  let j = await reqJson(`/api/admin/listings/${id}/status`, { method: "POST", user: USER, body: { status: "published" } });
+  assert.equal(j.ok, false);
+  assert.match(j.error, /faqat adminlar/);
+  j = await reqJson(`/api/admin/listings/${id}/status`, { method: "POST", user: ADM, body: { status: "published" } });
+  assert.equal(j.ok, true, j.error);
+  const r = row(id);
+  assert.equal(r.status, "published");
+  assert.equal(r.closed_at, null);
+  assert.ok(r.check_at > T() + 29 * 86400);
+  assert.match(lastCall("editMessageCaption").body.caption, /📞/);
+  assert.equal(lastCall("deleteMessage").body.message_id, reply);
+});
+
+test("admin: yopilish turini almashtiradi va ro'yxatda yopilganlarni ko'radi (oddiy foydalanuvchi — yo'q)", async () => {
+  const id = insertPublished(USER.id);
+  await reqJson(`/api/admin/listings/${id}/status`, { method: "POST", user: ADM, body: { status: "closed" } });
+  let j = await reqJson(`/api/admin/listings/${id}/status`, { method: "POST", user: ADM, body: { status: "given" } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(row(id).status, "given");
+  j = await reqJson(`/api/admin/listings/${id}/status`, { method: "POST", user: ADM, body: { status: "sold" } });
+  assert.match(j.error, /faqat sotuv/);
+  const adminList = await reqJson("/api/listings?status=closed", { user: ADM });
+  assert.ok(adminList.items.some((i) => i.id === id));
+  const userList = await reqJson("/api/listings?status=closed", { user: USER });
+  assert.ok(!userList.items.some((i) => i.id === id), "oddiy foydalanuvchiga faqat faol e'lonlar");
+  const d = await reqJson(`/api/listings/${id}`, { user: ADM });
+  assert.ok(d.admin, "adminga tahrirlash ma'lumoti beriladi");
+  assert.equal((await reqJson(`/api/listings/${id}`, { user: USER })).admin, null);
+});
+
+test("admin: tahrirlash — ma'lumot va kanaldagi post yangilanadi", async () => {
+  const id = insertPublished(USER.id);
+  const body = { kind: "hadya", region: "Samarqand viloyati", district: "Urgut tumani", breed: "Britan", age: "4 oylik",
+    gender: "m", health: "soglom", delivery: "bor", phone: "+998 90 111 22 33", tg_username: "", extra: "Yangi izoh" };
+  let j = await reqJson(`/api/admin/listings/${id}/edit`, { method: "POST", user: USER, body });
+  assert.match(j.error, /faqat adminlar/);
+  j = await reqJson(`/api/admin/listings/${id}/edit`, { method: "POST", user: ADM, body });
+  assert.equal(j.ok, true, j.error);
+  const r = row(id), data = JSON.parse(r.data);
+  assert.equal(r.region, "Samarqand viloyati");
+  assert.equal(data.breed, "Britan");
+  assert.equal(data.phone, "+998901112233");
+  const cap = lastCall("editMessageCaption").body.caption;
+  assert.match(cap, /Britan/);
+  assert.match(cap, /#Samarqand #Urgut/);
+  j = await reqJson(`/api/admin/listings/${id}/edit`, { method: "POST", user: ADM, body: { ...body, phone: "", tg_username: "" } });
+  assert.match(j.error, /kamida bittasini/);
+});
+
+test("admin: import qilingan postning matnini tahrirlash", async () => {
+  const text = "#hadyaga\nMushukcha beriladi\nManzil: Chilonzor\n📞 +998901234567";
+  await tgUpdate({ channel_post: { message_id: 4242, date: T(), chat: { id: -100, username: "Hadyagamushuklar" },
+    photo: [{ file_id: "x" }], caption: text, caption_entities: [{ type: "bold", offset: 9, length: 18 }] } });
+  const l = env.DB.raw.prepare("SELECT * FROM listings WHERE channel_msg_id=4242").get();
+  const j = await reqJson(`/api/admin/listings/${l.id}/edit`, { method: "POST", user: ADM,
+    body: { kind: "hadya", region: "Toshkent shahri", district: "Chilonzor tumani", raw: text + "\nYoshi: 2 oylik" } });
+  assert.equal(j.ok, true, j.error);
+  const data = JSON.parse(row(l.id).data);
+  assert.match(data.raw, /2 oylik/);
+  assert.equal(data.entities, undefined, "matn o'zgardi — eski formatlash olib tashlanadi");
+  assert.equal(lastCall("editMessageCaption").body.message_id, 4242);
+});
+
+test("admin: o'chirish — ilovadan olinadi, so'ralsa kanaldagi post ham o'chiriladi", async () => {
+  const id = insertPublished(USER.id);
+  const msg = row(id).channel_msg_id;
+  const j = await reqJson(`/api/admin/listings/${id}/delete`, { method: "POST", user: ADM, body: { channel: true } });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(j.channel_deleted, true);
+  assert.equal(row(id).status, "hidden");
+  assert.equal(lastCall("deleteMessage").body.message_id, msg);
+  assert.equal((await req(`/api/listings/${id}`)).status, 404);
+  const again = await reqJson(`/api/admin/listings/${id}/delete`, { method: "POST", user: ADM, body: {} });
+  assert.match(again.error, /topilmadi/);
+});
+
+test("kanal: oddiy post (salomlashish, kanal nomi) e'lon bo'lib qo'shilmaydi; #hadyaga bilan qo'shiladi", async () => {
+  const count = () => env.DB.raw.prepare("SELECT COUNT(*) AS n FROM listings").get().n;
+  const post = (id, caption) => tgUpdate({ channel_post: { message_id: id, date: T(), chat: { id: -100, username: "Hadyagamushuklar" },
+    photo: [{ file_id: "p" + id }], caption } });
+  const n = count();
+  await post(5001, "Assalomu alaykum, kanal a'zolari! 🐾\nKanal: @Hadyagamushuklar");
+  await post(5002, "Bugun bepul vaktsina aksiyasi! #yangilik");
+  await post(5003, "Kanalimiz #hadyagamushuklar ga obuna bo'ling");
+  await tgUpdate({ channel_post: { message_id: 5004, date: T(), chat: { id: -100, username: "Hadyagamushuklar" }, text: "#hadyaga matnli post" } });
+  assert.equal(count(), n, "e'lon bo'lmagan postlar qo'shilmadi");
+  await post(5005, "#hadyaga\nMushukcha beriladi\nManzil: Yunusobod");
+  assert.equal(count(), n + 1);
+  // admin forward qilsa ham kanal nomidagi «hadya» so'zi e'lon turi deb hisoblanmaydi
+  await tgUpdate({ message: { message_id: 9, from: ADM, chat: { id: ADMIN, type: "private" }, caption: "Salom! Kanal: @Hadyagamushuklar",
+    photo: [{ file_id: "q" }], forward_origin: { type: "channel", chat: { id: -100, username: "Hadyagamushuklar" }, message_id: 5006, date: T() } } });
+  assert.match(lastCall("sendMessage").body.text, /Turi aniqlanmadi/);
+  assert.equal(count(), n + 1);
 });

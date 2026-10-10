@@ -70,3 +70,22 @@ Bepul tarifda bitta ishga tushishda taxminan 50 ta tashqi so'rov (Telegram va ba
 ## Username tekshiruvi
 
 Telegram boshqa odamning username'i kimga tegishli ekanini aniqlashga ruxsat bermaydi. Shuning uchun formadagi username foydalanuvchi profilidagidan farq qilsa, adminga `⚠️ Username egasiniki bo'lmasligi mumkin` degan ogohlantirish chiqadi. Rad etish sabablari orasida "Ko'rsatilgan Telegram username sizniki emas" bandi bor.
+
+## Admin: e'lonlarni boshqarish (Mini App)
+
+Admin ilovada istalgan e'lonni ochsa, "Admin boshqaruvi" bloki chiqadi:
+
+- **Tahrirlash.** Bot joylagan e'lonning maydonlari tahrirlanadi va kanaldagi post ham yangilanadi. Kanaldan qo'shilgan e'lonning esa post matni tahrirlanadi (qalin yozuv kabi formatlash yo'qoladi).
+- **Berildi / Sotildi / Dolzarb emas.** Kanaldagi post tahrirlanadi. "Berildi" va "Sotildi"da kanalga qisqa javob ham yoziladi, "Dolzarb emas"da esa yozilmaydi.
+- **Yana faol qilish.** Yopilgan e'lon qaytadan ochiladi, postga kontaktlar qaytadi va "✅ Berildi" javobi o'chiriladi.
+- **O'chirish.** E'lon ilovadan olinadi. Xohlasangiz, kanaldagi postni ham o'chirish mumkin, buning uchun botda "Xabarlarni o'chirish" huquqi bo'lishi kerak.
+
+Qidiruv sahifasida faqat adminga "Faol / Berilgan va yopilgan / Shikoyatli" filtri ko'rinadi.
+
+## Kanaldan avtomatik qo'shish
+
+Kanalga admin o'zi joylagan post ilovaga **faqat** quyidagi ikki shart bajarilsa qo'shiladi:
+- postda rasm yoki video bor;
+- matnida `#hadyaga`, `#sotiladi` yoki `#reklama` hashtagi bor.
+
+Oddiy xabarlar ("Assalomu alaykum...", e'lon bo'lmagan postlar) qo'shilmaydi.

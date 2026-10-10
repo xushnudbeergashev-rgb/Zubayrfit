@@ -218,6 +218,55 @@ nav button.on{background:var(--lemon);color:var(--ink)}
 .helpline{display:flex;justify-content:center;margin:18px 0 4px}
 .ai-meta{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:8px}
 
+/* --- oynalar (modal) --- */
+.mbg{position:fixed;inset:0;z-index:50;background:rgba(18,18,58,.55);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .18s ease-out}
+.mbg.center{align-items:center;padding:20px}
+.modal{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:var(--paper);border:2px solid var(--ink);border-bottom:0;border-radius:28px 28px 0 0;
+  padding:22px 16px calc(16px + env(safe-area-inset-bottom,0px));animation:slideUp .26s cubic-bezier(.2,.9,.3,1.1)}
+.mbg.center .modal{border-bottom:2px solid var(--ink);border-radius:28px;box-shadow:0 8px 0 var(--ink);animation:popIn .32s cubic-bezier(.2,.9,.3,1.25)}
+.modal h2{font-size:20px;margin-bottom:6px}
+.modal .lead{margin:0 0 14px}
+.mbtns{display:flex;gap:10px;margin-top:16px}
+.mbtns .btn{margin:0;flex:1;min-height:52px;font-size:14px}
+.btn.danger{background:var(--danger);color:#fff}
+.sum{background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:4px 14px;margin-bottom:12px}
+.sum .r{display:flex;gap:12px;justify-content:space-between;padding:10px 0;font-size:14px}
+.sum .r + .r{border-top:1.5px solid var(--line)}
+.sum .r span{color:var(--muted);flex:0 0 auto}
+.sum .r b{text-align:right;overflow-wrap:anywhere;font-weight:700}
+.sum .r b.empty{color:#A3A3BC;font-weight:600}
+.sumpics{display:flex;gap:8px;margin-bottom:12px}
+.sumpics div{width:76px;height:76px;border-radius:12px;border:2px solid var(--ink);background:var(--blue-soft) center/cover no-repeat;overflow:hidden}
+.sumpics video{width:100%;height:100%;object-fit:cover}
+.kindtag{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;padding:6px 12px;border-radius:10px;border:2px solid var(--ink);margin-bottom:12px}
+.okmark{width:96px;height:96px;margin:6px auto 16px;border-radius:50%;background:var(--lemon);border:3px solid var(--ink);box-shadow:0 5px 0 var(--ink);display:grid;place-items:center;animation:popIn .45s .05s both cubic-bezier(.2,.9,.3,1.4)}
+.okmark svg{width:50px;height:50px;stroke-dasharray:40;stroke-dashoffset:40;animation:draw .4s .35s forwards ease-out}
+.steps{display:grid;gap:8px;margin:14px 0 4px;text-align:left}
+.steps div{display:flex;gap:12px;align-items:center;background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:600}
+.steps i{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px}
+.mcenter{text-align:center}
+.mcenter .lead{margin:6px 0 0}
+.check{display:flex;gap:10px;align-items:flex-start;background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:12px;font-size:14px;font-weight:600;margin-top:12px}
+.check input{width:22px;height:22px;flex:0 0 auto;accent-color:var(--ink)}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes slideUp{from{transform:translateY(60%)}}
+@keyframes popIn{from{transform:scale(.6);opacity:0}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.mbg,.modal,.okmark,.okmark svg{animation:none!important;stroke-dashoffset:0}}
+
+/* --- admin: e'lonni boshqarish --- */
+.adminbox{background:var(--white);border:2px dashed var(--ink);border-radius:18px;padding:14px;margin:4px 0 16px}
+.adminbox .ah{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-family:var(--display);font-weight:600;font-size:14px}
+.adminbox .ah .st{margin:0}
+.abtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.abtns button{min-height:46px;border-radius:12px;border:2px solid var(--ink);background:var(--white);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.abtns button.y{background:var(--lemon)}
+.abtns button.r{color:var(--danger)}
+.abtns button.w{grid-column:1 / -1}
+.chips.status{margin-top:10px}
+.chips.status label{min-height:34px;font-size:12px;padding:0 10px;border-style:dashed}
+.st.hidden{background:var(--danger-soft);color:var(--danger)}
+
 /* --- admin --- */
 .queue .q{display:flex;gap:10px;align-items:center;border-bottom:1.5px solid var(--line);padding:10px 0}
 .queue .q:last-child{border:0}
@@ -248,6 +297,12 @@ nav button.on{background:var(--lemon);color:var(--ink)}
       <input type="radio" name="fk" id="fk-h" value="hadya"><label for="fk-h">Hadya</label>
       <input type="radio" name="fk" id="fk-s" value="sotuv"><label for="fk-s">Sotuv</label>
       <input type="radio" name="fk" id="fk-r" value="reklama"><label for="fk-r">Reklama</label>
+    </div>
+    <!-- faqat adminga: yopilgan va shikoyatli e'lonlarni ham ko'rish -->
+    <div class="chips status" id="adminFilter" hidden>
+      <input type="radio" name="fs" id="fs-p" value="published" checked><label for="fs-p">Faol</label>
+      <input type="radio" name="fs" id="fs-c" value="closed"><label for="fs-c">Berilgan / yopilgan</label>
+      <input type="radio" name="fs" id="fs-r" value="reported"><label for="fs-r">Shikoyatli</label>
     </div>
     <div class="grid" id="results"></div>
     <div class="empty" id="noResults" hidden>Bu yerda hozircha e'lon yo'q</div>
@@ -416,7 +471,30 @@ async function api(path, opts = {}) {
   } catch { return {ok:false, error:"Internet aloqasini tekshiring."}; }
 }
 const say = (m, cb) => tg?.showAlert ? tg.showAlert(m, cb) : (alert(m), cb && cb());
-const ask = m => new Promise(res => tg?.showConfirm ? tg.showConfirm(m, res) : res(confirm(m)));
+/* ---------- oynalar (modal) ---------- */
+// Oyna ochiq paytda Telegram'ning pastki tugmasi yashiriladi, yopilganda qaytariladi
+function openModal(html, {center = false} = {}) {
+  const bg = document.createElement("div");
+  bg.className = "mbg" + (center ? " center" : "");
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.append(bg);
+  if (inTg) tg.MainButton.hide();
+  const close = () => { bg.remove(); updateMainButton(); };
+  return {el: bg.querySelector(".modal"), bg, close};
+}
+// Tasdiqlash oynasi → Promise<boolean>
+function confirmBox({title, text = "", ok = "Ha", cancel = "Bekor qilish", danger = false, extra = ""}) {
+  return new Promise(res => {
+    const m = openModal(`<h2>${esc(title)}</h2>${text ? `<p class="lead">${text}</p>` : ""}${extra}
+      <div class="mbtns"><button class="btn ghost" data-no>${esc(cancel)}</button><button class="btn${danger ? " danger" : ""}" data-yes>${esc(ok)}</button></div>`, {center: true});
+    const done = v => { const box = m.el; m.close(); res(v ? box : false); };
+    m.el.querySelector("[data-no]").onclick = () => done(false);
+    m.el.querySelector("[data-yes]").onclick = () => { haptic("success"); done(true); };
+    m.bg.onclick = e => { if (e.target === m.bg) done(false); };
+  });
+}
+const ask = m => confirmBox({title: "Tasdiqlang", text: esc(m)});
+const OK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const haptic = t => tg?.HapticFeedback?.notificationOccurred(t);
 const openTg = url => tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url);
 const thumb = (url, cls = "ph") => url ? `<div class="${cls}" style="background-image:url('${url}')">` : `<div class="${cls} empty-ph">`;
@@ -451,11 +529,13 @@ let offset = 0;
 async function search(reset = true) {
   if (reset) { offset = 0; $("#results").innerHTML = ""; }
   const q = new URLSearchParams({kind: $('input[name="fk"]:checked').value, region: $("#fRegion").value, district: $("#fDistrict").value, offset});
+  if (ME.is_admin && val("fs") !== "published") q.set("status", val("fs"));
   const j = await api("api/listings?" + q);
   (j.items || []).forEach(it => {
     const b = document.createElement("button");
     b.className = "item";
-    b.innerHTML = `${thumb(it.thumb)}<span class="badge b-${it.kind}">${KIND[it.kind]}</span></div>
+    const stBadge = it.status !== "published" ? `<span class="badge" style="left:auto;right:6px;bottom:auto;top:6px;position:absolute;background:var(--white);color:var(--ink)">${esc(it.status_text)}</span>` : "";
+    b.innerHTML = `${thumb(it.thumb)}<span class="badge b-${it.kind}">${KIND[it.kind]}</span>${stBadge}</div>
       <div class="meta"><div class="t">${esc(it.title)}</div><div class="s">${esc(it.district || it.region || "")}</div><div class="p">${esc(it.kind === "hadya" ? "BEPUL" : it.price)}</div></div>`;
     b.onclick = () => openDetail(it.id);
     $("#results").append(b);
@@ -465,7 +545,7 @@ async function search(reset = true) {
   $("#noResults").hidden = offset > 0;
   if (j.error) { $("#noResults").textContent = j.error; $("#noResults").hidden = false; }
 }
-$$('input[name="fk"]').forEach(i => i.onchange = () => search());
+$$('input[name="fk"], input[name="fs"]').forEach(i => i.onchange = () => search());
 $("#fRegion").onchange = () => { fillDistricts($("#fDistrict"), $("#fRegion").value, "Barcha tumanlar"); search(); };
 $("#fDistrict").onchange = () => search();
 $("#loadMore").onclick = () => search(false);
@@ -495,11 +575,13 @@ async function openDetail(id) {
     // Kontaktlar faqat Telegram ichida ko'rinadi (raqamlarni skript bilan yig'ib bo'lmasin)
     actions += `<div class="note-box">${j.contact_hidden ? "Egasining kontaktini ko'rish uchun ilovani Telegram'dagi bot orqali oching" : "Kontakt uchun kanaldagi postni ko'ring"}</div>`;
   } else {
-    actions += `<div class="note-box">${j.status === "given" ? "Bu mushuk yangi uyini topdi" : j.status === "sold" ? "Sotilgan" : "E'lon dolzarb emas"}</div>`;
+    actions += `<div class="note-box">${j.status === "given" ? "Bu mushuk yangi uyini topdi" : j.status === "sold" ? "Sotilgan"
+      : j.status === "reported" ? "Shikoyat sabab ilovadan vaqtincha yashirilgan" : j.status === "hidden" ? "Ilovadan olib tashlangan" : "E'lon dolzarb emas"}</div>`;
   }
+  if (j.admin) actions = adminBox(j) + actions;
   if (CONFIG.bot && j.status === "published") actions += `<button class="btn ghost" id="dShare">${ICON.share}Do'stlarga ulashish</button>`;
   if (j.post) actions += `<button class="btn ghost" id="dPost">${ICON.ext}Kanalda ko'rish</button>`;
-  if (inTg && j.status === "published" && !j.mine) actions += `<button class="report" id="dReport">${ICON.flag}Shikoyat qilish</button><div id="reportBox"></div>`;
+  if (inTg && j.status === "published" && !j.mine && !j.admin) actions += `<button class="report" id="dReport">${ICON.flag}Shikoyat qilish</button><div id="reportBox"></div>`;
   $("#detail").innerHTML = `
     <div class="dtop"><button class="round" id="dBack" aria-label="Orqaga">${ICON.back}</button><span class="eyebrow">${TAG[j.kind]}</span><span style="width:44px"></span></div>
     <div class="gallery" id="gal">${gal}</div>${dots}
@@ -521,12 +603,123 @@ async function openDetail(id) {
     openTg(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
   };
   if ($("#dReport")) $("#dReport").onclick = () => showReport(j.id);
+  if (j.admin) bindAdminBox(j);
   const g = $("#gal");
   if (media.length > 1) g.onscroll = () => {
     const i = Math.round(g.scrollLeft / g.clientWidth);
     $$(".dots i").forEach((d, k) => d.classList.toggle("on", k === i));
   };
   show("detail");
+}
+
+
+/* ---------- admin: e'lonni boshqarish (faqat adminga ko'rinadi) ---------- */
+const AICON = {
+  edit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>',
+  trash: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  undo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+  stop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>',
+};
+function adminBox(j) {
+  const st = j.status, open = st === "published" || st === "reported";
+  const doneBtn = j.kind === "hadya" ? ["given", "Berildi"] : j.kind === "sotuv" ? ["sold", "Sotildi"] : null;
+  const b = [];
+  if (st === "hidden") return `<div class="adminbox"><div class="ah">Admin<span class="st hidden">${esc(j.status_text)}</span></div><p class="sub" style="margin:0">Bu e'lon ilovadan olib tashlangan.</p></div>`;
+  if (!open) b.push(`<button class="y w" data-a="published">${AICON.undo}Yana faol qilish</button>`);
+  if (st === "reported") b.push(`<button class="y w" data-a="published">${AICON.undo}Ilovaga qaytarish (shikoyat asossiz)</button>`);
+  b.push(`<button data-a="edit">${AICON.edit}Tahrirlash</button>`);
+  if (doneBtn && st !== doneBtn[0]) b.push(`<button data-a="${doneBtn[0]}">${AICON.check}${doneBtn[1]}</button>`);
+  if (st !== "closed") b.push(`<button data-a="closed">${AICON.stop}Dolzarb emas</button>`);
+  b.push(`<button class="r" data-a="delete">${AICON.trash}O'chirish</button>`);
+  return `<div class="adminbox"><div class="ah">Admin boshqaruvi<span class="st ${st}">${esc(j.status_text)}</span></div><div class="abtns">${b.join("")}</div></div>`;
+}
+const adminPost = (id, what, body) => api(`api/admin/listings/${id}/${what}`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+function bindAdminBox(j) {
+  $$(".adminbox [data-a]").forEach(btn => btn.onclick = async () => {
+    const a = btn.dataset.a;
+    if (a === "edit") return editListing(j);
+    if (a === "delete") {
+      const box = await confirmBox({title: "E'lonni o'chirasizmi?", text: `<b>#${j.id} · ${esc(j.title)}</b><br>E'lon ilovadan olib tashlanadi.`,
+        ok: "O'chirish", cancel: "Bekor qilish", danger: true,
+        extra: j.post ? `<label class="check"><input type="checkbox" id="delCh"><span>Kanaldagi postni ham o'chirish<br><small class="sub">Bot kanalda «Xabarlarni o'chirish» huquqiga ega bo'lishi kerak</small></span></label>` : ""});
+      if (!box) return;
+      const r = await adminPost(j.id, "delete", {channel: !!box.querySelector("#delCh")?.checked});
+      if (!r.ok) return say(r.error);
+      haptic("success");
+      say(r.channel_deleted === false ? "Ilovadan o'chirildi. Kanaldagi postni bot o'chira olmadi — uni kanalda qo'lda o'chiring." : "O'chirildi.", () => { show("search"); search(); });
+      return;
+    }
+    const texts = {
+      published: ["E'lonni yana faol qilasizmi?", "E'lon ilovada qayta ko'rinadi, kanaldagi postga kontaktlar qaytariladi.", "Ha, faol qilish"],
+      given: ["«Berildi» deb belgilaysizmi?", "Kanaldagi post «Berildi» deb tahrirlanadi va kanalga qisqa «✅ Berildi» javobi yoziladi.", "Ha, berildi"],
+      sold: ["«Sotildi» deb belgilaysizmi?", "Kanaldagi post «Sotildi» deb tahrirlanadi va kanalga qisqa «✅ Sotildi» javobi yoziladi.", "Ha, sotildi"],
+      closed: ["«Dolzarb emas» deb belgilaysizmi?", "Kanaldagi post tahrirlanadi (kontaktlar olib tashlanadi). Kanalga alohida xabar yuborilmaydi.", "Ha, dolzarb emas"],
+    }[a];
+    if (!await confirmBox({title: texts[0], text: `<b>#${j.id} · ${esc(j.title)}</b><br>${texts[1]}`, ok: texts[2], cancel: "Yo'q"})) return;
+    const r = await adminPost(j.id, "status", {status: a});
+    if (!r.ok) return say(r.error);
+    haptic("success");
+    openDetail(j.id);
+  });
+}
+function editListing(j) {
+  const A = j.admin, d = A.data || {};
+  const opt = (list, cur) => list.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`).join("");
+  const kinds = [["hadya", "Hadya"], ["sotuv", "Sotuv"], ["reklama", "Reklama"]];
+  const place = `<div class="field"><label class="lbl">Hudud</label><select id="eRegion"><option value="">Tanlanmagan</option>${opt(REGIONS.map(r => [r.name, r.name]), A.region)}</select></div>
+    <div class="field"><label class="lbl">Tuman / shahar</label><select id="eDistrict"></select></div>`;
+  const body = A.imported ? `
+    <p class="lead">Bu e'lon kanaldan qo'shilgan. Post matnini tahrirlaysiz — kanaldagi post ham yangilanadi (qalin yozuv kabi formatlash yo'qoladi).</p>
+    <div class="group"><div class="field"><label class="lbl">Turi</label><select id="eKind">${opt(kinds, A.kind)}</select></div>${place}</div>
+    <div class="group"><div class="field"><label class="lbl">Post matni</label><textarea id="eRaw" style="min-height:220px">${esc(A.raw || "")}</textarea><div class="count"><span id="eCnt"></span></div></div></div>`
+  : `
+    <div class="group">
+      <div class="field"><label class="lbl">Turi</label><select id="eKind">${opt(kinds, A.kind)}</select></div>
+      <div class="field ek-cat"><label class="lbl">Zoti</label><input id="eBreed" maxlength="40" value="${esc(d.breed || "")}"></div>
+      <div class="field ek-cat"><label class="lbl">Yoshi</label><input id="eAge" maxlength="30" value="${esc(d.age || "")}"></div>
+      <div class="field ek-cat"><label class="lbl">Jinsi</label><select id="eGender">${opt([["f", "Urg'ochi"], ["m", "Erkak"], ["u", "Noma'lum"]], d.gender || "u")}</select></div>
+      <div class="field ek-cat"><label class="lbl">Sog'lig'i</label><div class="chips">${Object.entries(HEALTH_T).map(([k, t]) =>
+        `<input type="checkbox" id="eh-${k}" value="${k}"${(d.health || []).includes(k) ? " checked" : ""}><label for="eh-${k}">${t}</label>`).join("")}</div>
+        <input id="eHealthNote" maxlength="80" placeholder="Qo'shimcha (ixtiyoriy)" value="${esc(d.health_note || "")}" style="margin-top:10px"></div>
+      <div class="field ek-cat"><label class="lbl">Dostafka</label><select id="eDelivery">${opt([["bor", "Bor"], ["yoq", "Yo'q"], ["kelish", "Kelishiladi"]], d.delivery || "kelish")}</select></div>
+      <div class="field ek-rek"><label class="lbl">Nomi</label><input id="eTitle" maxlength="60" value="${esc(d.title || "")}"></div>
+      <div class="field ek-rek"><label class="lbl">Tavsif</label><textarea id="eAbout" maxlength="300">${esc(d.about || "")}</textarea></div>
+      <div class="field ek-price"><label class="lbl">Narxi</label><input id="ePrice" maxlength="40" value="${esc(d.price ?? "")}"></div>
+    </div>
+    <div class="group">${place}
+      <div class="field"><label class="lbl">Telefon</label><input id="ePhone" type="tel" value="${esc(d.phone || "+998 ")}"></div>
+      <div class="field"><label class="lbl">Telegram username</label><input id="eUser" value="${A.username ? "@" + esc(A.username) : ""}" placeholder="@username"></div>
+      <div class="field"><label class="lbl">Qo'shimcha ma'lumot</label><textarea id="eExtra" maxlength="400">${esc(d.extra || "")}</textarea></div>
+    </div>`;
+  const m = openModal(`<h2>#${j.id} — tahrirlash</h2>${body}
+    <div class="mbtns"><button class="btn ghost" data-no>Bekor qilish</button><button class="btn" data-save>Saqlash</button></div>`);
+  const q = s => m.el.querySelector(s);
+  const fillD = () => { fillDistricts(q("#eDistrict"), q("#eRegion").value, "Tanlanmagan"); q("#eDistrict").value = A.district || ""; };
+  fillD();
+  q("#eRegion").onchange = () => fillDistricts(q("#eDistrict"), q("#eRegion").value, "Tanlang…");
+  const kindVis = () => {
+    const k = q("#eKind").value;
+    m.el.querySelectorAll(".ek-cat").forEach(e => e.hidden = k === "reklama");
+    m.el.querySelectorAll(".ek-rek").forEach(e => e.hidden = k !== "reklama");
+    m.el.querySelectorAll(".ek-price").forEach(e => e.hidden = k === "hadya");
+  };
+  if (!A.imported) { q("#eKind").onchange = kindVis; kindVis(); }
+  if (A.imported) { const c = () => q("#eCnt").textContent = `${q("#eRaw").value.length} / ${j.media.length ? 1024 : 4096}`; q("#eRaw").oninput = c; c(); }
+  q("[data-no]").onclick = () => m.close();
+  q("[data-save]").onclick = async () => {
+    const payload = A.imported
+      ? {kind: q("#eKind").value, region: q("#eRegion").value, district: q("#eDistrict").value, raw: q("#eRaw").value}
+      : {kind: q("#eKind").value, region: q("#eRegion").value, district: q("#eDistrict").value, breed: q("#eBreed").value, age: q("#eAge").value,
+         gender: q("#eGender").value, health: [...m.el.querySelectorAll('[id^="eh-"]:checked')].map(i => i.value).join(","),
+         health_note: q("#eHealthNote").value, delivery: q("#eDelivery").value, title: q("#eTitle").value, about: q("#eAbout").value,
+         price: q("#ePrice").value, phone: q("#ePhone").value, tg_username: q("#eUser").value, extra: q("#eExtra").value};
+    q("[data-save]").disabled = true;
+    const r = await adminPost(j.id, "edit", payload);
+    q("[data-save]").disabled = false;
+    if (!r.ok) return say(r.error);
+    haptic("success"); m.close(); openDetail(j.id);
+  };
 }
 
 /* ---------- shikoyat ---------- */
@@ -642,8 +835,59 @@ function validate() {
   return !bad.length;
 }
 
-async function submit() {
+// «E'lonni yuborish» bosilganda: avval yozilganlarni ko'rsatib, tasdiqlatamiz (xato bo'lsa o'zgartirish mumkin)
+const GENDER_T = {f: "Urg'ochi", m: "Erkak", u: "Bilmayman"};
+const DELIV_T = {bor: "Bor", yoq: "Yo'q", kelish: "Kelishiladi"};
+const HEALTH_T = {soglom: "Sog'lom", emlangan: "Emlangan", steril: "Sterilizatsiya qilingan"};
+const fmtPrice = v => { const d = String(v).replace(/\D/g, ""); return d ? d.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm" : ""; };
+function reviewRows() {
+  const v = id => $("#" + id).value.trim();
+  const health = [...$$('input[name="health"]:checked').map(i => HEALTH_T[i.value]), v("health_note")].filter(Boolean).join(", ");
+  const user = cleanUser();
+  const rows = kind === "reklama"
+    ? [["Nomi", v("title")], ["Tavsif", v("about")], ["Narxi", v("rprice")]]
+    : [["Zoti", v("breed")], ["Yoshi", v("age")], ["Jinsi", GENDER_T[val("gender")]], ["Sog'lig'i", health],
+       ["Dostafka", DELIV_T[val("delivery")]], ["Narxi", kind === "sotuv" ? fmtPrice(v("price")) : "Bepul"]];
+  rows.push(["Hudud", v("region")], ["Tuman / shahar", v("district")],
+    ["Telefon", phoneDigits() ? $("#phone").value.trim() : ""], ["Telegram", user ? "@" + user : ""], ["Qo'shimcha", v("extra")]);
+  return rows;
+}
+function submit() {
   if (sending || !validate()) return;
+  const kinds = {hadya: ["Hadyaga mushuk · BEPUL", "var(--lemon)", "var(--ink)"], sotuv: ["Mushuk sotish", "var(--ink)", "#fff"], reklama: ["Reklama", "var(--blue)", "#fff"]}[kind];
+  const pics = media.filter(Boolean).map(m => {
+    const url = URL.createObjectURL(m.blob);
+    return m.video ? `<div><video src="${url}" muted playsinline></video></div>` : `<div style="background-image:url(${url})"></div>`;
+  }).join("");
+  const rows = reviewRows().map(([k, x]) => `<div class="r"><span>${esc(k)}</span><b class="${x ? "" : "empty"}">${x ? esc(x) : "—"}</b></div>`).join("");
+  const m = openModal(`
+    <h2>E'loningizni tekshiring</h2>
+    <p class="lead">Hammasi to'g'rimi? Xato bo'lsa, «O'zgartirish»ni bosing.</p>
+    <span class="kindtag" style="background:${kinds[1]};color:${kinds[2]}">${kinds[0]}</span>
+    <div class="sumpics">${pics}</div>
+    <div class="sum">${rows}</div>
+    ${kind !== "hadya" ? `<div class="warn" style="margin:0">${ICON.warn}<span>Admin ma'qullagach ${esc(CONFIG.price_text)} to'lov qilasiz.</span></div>` : ""}
+    <div class="mbtns"><button class="btn ghost" data-edit>O'zgartirish</button><button class="btn" data-send>Tasdiqlash va yuborish</button></div>`);
+  m.el.querySelector("[data-edit]").onclick = () => m.close();
+  m.el.querySelector("[data-send]").onclick = () => { m.close(); sendListing(); };
+}
+function showSent() {
+  const paid = kind !== "hadya";
+  const m = openModal(`<div class="mcenter">
+    <div class="okmark">${OK_SVG}</div>
+    <h2>E'loningiz adminga yuborildi!</h2>
+    <p class="lead">Rahmat! Mushukchangizga tezroq uy topilishini tilaymiz 🐾</p>
+    <div class="steps">
+      <div><i>1</i>Admin e'lonni tekshiradi</div>
+      ${paid ? `<div><i>2</i>Ma'qullansa, ${esc(CONFIG.price_text)} to'lov qilasiz</div>` : ""}
+      <div><i>${paid ? 3 : 2}</i>E'lon kanalga va ilovaga chiqadi</div>
+      <div><i>${paid ? 4 : 3}</i>Natija haqida bot sizga xabar beradi</div>
+    </div>
+    <div class="mbtns"><button class="btn" data-ok>OK</button></div></div>`, {center: true});
+  m.el.querySelector("[data-ok]").onclick = () => { m.close(); resetForm(); show("my"); };
+}
+async function sendListing() {
+  if (sending) return;
   sending = true; tg?.MainButton.showProgress(); $("#fallbackSubmit").disabled = true;
   const fd = new FormData();
   fd.append("initData", tg?.initData || ""); fd.append("kind", kind);
@@ -654,10 +898,8 @@ async function submit() {
   media.filter(Boolean).forEach((m, i) => fd.append("media", m.blob, m.video ? `v${i}.mp4` : `p${i}.jpg`));
   const j = await api("api/submit", {method: "POST", body: fd});
   sending = false; tg?.MainButton.hideProgress(); $("#fallbackSubmit").disabled = false;
-  if (j.ok) {
-    haptic("success");
-    say("E'lon adminga yuborildi! Natija haqida bot xabar beradi.", () => { resetForm(); show("my"); });
-  } else say(j.error || "Xatolik. Qayta urinib ko'ring.");
+  if (j.ok) { haptic("success"); showSent(); }
+  else say(j.error || "Xatolik. Qayta urinib ko'ring.");
 }
 function resetForm() {
   [0, 1, 2].forEach(i => setMedia(i, null));
@@ -699,8 +941,16 @@ async function loadMy() {
       ${it.status === "reported" ? `<div class="sub">Admin tekshirguncha ilovada ko'rinmaydi. Kanaldagi post joyida.</div>` : ""}
       <div class="acts">${acts}</div></div>`;
     el.querySelectorAll(".acts button").forEach(b => b.onclick = async () => {
-      const label = {given:"Berildi", sold:"Sotildi", closed:"Dolzarb emas"}[b.dataset.s];
-      if (!await ask(`E'lonni «${label}» deb belgilaysizmi? Kanaldagi postdan kontaktlaringiz olib tashlanadi.`)) return;
+      const s = b.dataset.s;
+      const ok = await confirmBox({
+        title: {given: "Mushuk yangi uyini topdimi?", sold: "Mushuk sotildimi?", closed: "E'lon dolzarb emasmi?"}[s],
+        text: `<b>#${it.id} · ${esc(it.title)}</b><br>` + (s === "closed"
+          ? "E'lon yopiladi. Kanaldagi post «Dolzarb emas» deb tahrirlanadi, kontaktlaringiz olib tashlanadi."
+          : `E'lon yopiladi. Kanaldagi post «${s === "given" ? "Berildi" : "Sotildi"}» deb belgilanadi, kontaktlaringiz olib tashlanadi.`) +
+          "<br><br>Adashib bosgan bo'lsangiz, «Yo'q»ni bosing.",
+        ok: {given: "Ha, berildi", sold: "Ha, sotildi", closed: "Ha, dolzarb emas"}[s], cancel: "Yo'q",
+      });
+      if (!ok) return;
       const r = await api(`api/my/${it.id}/close`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({status: b.dataset.s})});
       if (r.ok) { haptic("success"); loadMy(); } else say(r.error);
     });
@@ -839,6 +1089,7 @@ document.addEventListener("click", e => {
     const me = await api("api/me");
     if (!me.error) ME = me;
     $("#navAdmin").hidden = !ME.is_admin;
+    $("#adminFilter").hidden = !ME.is_admin;
     if (ME.is_admin && location.hash === "#admin") show("admin");
   }
   refreshAiLeft();
