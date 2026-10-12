@@ -64,7 +64,7 @@
   --brand:#1B3F96; --brand-ink:#FFFFFF; --accent:#0F7F7A; --accent-ink:#FFFFFF; --hot:#C2473B; --fill:#0F7F7A;
   --combo:#1B3F96; --combo-ink:#FFFFFF; --tag-ink:#FFFFFF; --focus:#0F1E3D;
   --display:"Prata",Georgia,"Times New Roman",serif; --body:"Golos Text",system-ui,-apple-system,sans-serif;
-  --r:22px; --r-sm:14px; --ph-r:999px 999px 14px 14px; --hero-r:999px 999px 28px 28px; --h1:clamp(44px,12vw,82px); --h1-track:0;
+  --r:22px; --r-sm:14px; --ph-r:50% 50% 14px 14px; --hero-r:50% 50% 28px 28px; --h1:clamp(44px,12vw,82px); --h1-track:0;
   --shadow:0 1px 2px rgba(15,30,61,.06),0 10px 30px -14px rgba(27,63,150,.35)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-design="rishton"]{
   --bg:#0B1226; --surface:#121C36; --surface2:#182647; --ink:#E7EDFA; --muted:#9CABCB; --line:#24345C;
@@ -114,10 +114,11 @@ h2{font:800 clamp(26px,6.4vw,38px)/1.05 var(--display);margin:0;text-wrap:balanc
 .promo .wrap{padding-block:8px}
 
 /* Top bar */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:16px 0}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;padding-block:16px 0}
+@media (max-width:420px){.status{font-size:12px;padding:5px 10px;gap:6px}}
 .logo{display:flex;align-items:center;gap:10px;font:800 15px var(--display);text-decoration:none}
 .logo i{width:40px;height:40px;border-radius:var(--r-sm);background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-style:normal;font-size:14px}
-.status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;border-radius:999px;padding:6px 12px;
+.status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;border-radius:999px;padding:6px 12px;white-space:nowrap;
   background:var(--surface);border:var(--bw) solid var(--line)}
 .status i{width:8px;height:8px;border-radius:50%;background:var(--fill);box-shadow:0 0 0 4px color-mix(in srgb,var(--fill) 25%,transparent)}
 .status.closed i{background:var(--hot);box-shadow:0 0 0 4px color-mix(in srgb,var(--hot) 25%,transparent)}
@@ -181,6 +182,7 @@ div.ph{cursor:default}
   padding:4px max(16px,calc((100% - 1008px)/2)) 14px;scroll-padding-inline:max(16px,calc((100% - 1008px)/2));scrollbar-width:none}
 .rail::-webkit-scrollbar{display:none}
 @media (min-width:1040px){.rail{grid-auto-columns:calc((1008px - 42px)/4)}}
+.rail{padding-bottom:30px;margin-bottom:-16px}
 .hit{scroll-snap-align:start;background:var(--surface);border:var(--bw) solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-width:0;box-shadow:var(--shadow)}
 .hit .ph{border-radius:0}
 .hit .ph:focus-visible{outline-offset:-4px}
@@ -233,14 +235,15 @@ nav.cats{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:v
 .card{display:grid;grid-template-columns:112px 1fr;gap:14px;padding:10px;background:var(--surface);border:var(--bw) solid var(--line);border-radius:var(--r);min-width:0}
 .card .ph{width:112px}
 .card .txt{display:flex;flex-direction:column;gap:4px;min-width:0;padding-block:2px}
-.card h3{margin:0;font-size:16.5px;line-height:1.3}
+.card h3{margin:0;font-size:16.5px;line-height:1.3;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px}
 .card h3 button{all:unset;cursor:pointer}
 .card h3 button:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
 .card p{margin:0;color:var(--muted);font-size:14px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card .row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:6px}
-.card h3 .tag{margin-left:6px;vertical-align:2px}
-.weight{color:var(--muted);font-weight:600;font-size:13px;margin-left:6px;white-space:nowrap}
+.weight{color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap}
 .card.off .ph img{filter:grayscale(1);opacity:.6}
+.card.off .ph:has(img) svg{display:none}
+.card.off .ph{background:var(--surface)}
 .card.off h3,.card.off .price{color:var(--muted)}
 
 .qty{display:flex;align-items:center;gap:2px;background:var(--surface);border:var(--bw) solid var(--line);border-radius:999px;padding:3px;flex:none}
@@ -283,7 +286,8 @@ nav.cats{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:v
 .where .links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hours{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;margin:0}
 .hours dt{color:var(--muted)}
-.hours dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-wrap:balance}
+.hours dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-wrap:pretty}
+@media (max-width:520px){.hours{grid-template-columns:1fr;row-gap:0}.hours dd{margin-bottom:10px}.hours dd:last-child{margin-bottom:0}}
 
 footer.site{padding-block:36px 24px;color:var(--muted);font-size:13px;display:grid;gap:12px;border-top:var(--bw) solid var(--line);margin-top:48px}
 footer.site .row{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between}
@@ -304,7 +308,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 
 /* Sheets */
 .scrim{position:fixed;inset:0;z-index:20;background:rgba(10,12,10,.55)}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg);border-radius:var(--r) var(--r) 0 0;max-height:90vh;overflow:auto;overscroll-behavior:contain;
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg);border-radius:var(--r) var(--r) 0 0;max-height:90vh;overflow:auto;overscroll-behavior:contain;scroll-padding-bottom:230px;
   padding:8px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25);max-width:640px;margin-inline:auto}
 .sheet .wrap{display:grid;gap:14px;max-width:640px}
 .sheet > .wrap:last-child{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -323,6 +327,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{border:var(--bw) solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer}
 .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#pay{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr))}
 .field{display:grid;gap:4px}
 .field > label,.field > .lbl{font-size:13px;font-weight:700;color:var(--muted)}
 .field input,.field textarea,.field select{font:inherit;color:var(--ink);background:var(--surface);border:var(--bw) solid var(--line);border-radius:var(--r-sm);padding:12px 14px;width:100%}
@@ -336,18 +341,19 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 .sum span:nth-child(odd){color:var(--muted)}
 .sum span:nth-child(even){text-align:right}
 .sum .t{font:800 20px var(--display);color:var(--ink);padding-top:6px}
+.sum span.t{color:var(--ink)}
 .hint{font-size:13px;color:var(--muted);margin:0}
 .send{position:sticky;bottom:0;z-index:1;display:grid;gap:4px;background:var(--bg);padding-block:10px calc(12px + env(safe-area-inset-bottom,0px));
   box-shadow:0 -14px 14px -6px var(--bg);margin-top:-4px}
 .done{text-align:center;justify-items:center;padding-block:12px 4px}
-.done .big-tick{width:72px;height:72px;border-radius:50%;background:var(--fill);color:var(--surface);display:grid;place-items:center}
+.done .big-tick{width:72px;height:72px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
 .done .big-tick svg{width:36px;height:36px}
 .done p{margin:0;color:var(--muted);max-width:40ch}
 .done .btns{display:grid;gap:8px;width:100%}
 
 /* Product sheet */
-.pd .big{width:100%;border-radius:var(--hero-r);aspect-ratio:1/1;max-height:52vh;margin-inline:auto}
-:root[data-design="rishton"] .pd .big{border-radius:999px 999px var(--r) var(--r)}
+.pd .big{width:min(100%,52vh);border-radius:var(--hero-r);aspect-ratio:1/1;margin-inline:auto}
+:root[data-design="rishton"] .pd .big{border-radius:50% 50% var(--r) var(--r)}
 .pd h2{font-size:28px}
 .pd p{margin:0;color:var(--muted)}
 .pd .buyrow{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
@@ -379,7 +385,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 :root[data-design="olov"] .rev-score b{font-size:28px;background:var(--ink);color:var(--bg);padding:6px 10px 4px;border-radius:var(--r-sm);transform:rotate(-2deg)}
 :root[data-design="olov"] .mode{background:var(--surface);border:var(--bw) solid var(--line)}
 :root[data-design="olov"] .mode button[aria-pressed="true"]{background:var(--ink);color:var(--bg);box-shadow:none}
-:root[data-design="olov"] .pd .big{border:var(--bw) solid var(--line);box-shadow:var(--shadow);width:calc(100% - 5px)}
+:root[data-design="olov"] .pd .big{border:var(--bw) solid var(--line);box-shadow:var(--shadow);width:min(calc(100% - 5px),52vh)}
 @media (max-width:420px){
   :root[data-design="olov"] .facts{grid-template-columns:1fr;gap:0;background:var(--surface);border:var(--bw) solid var(--line);border-radius:var(--r-sm);box-shadow:var(--shadow)}
   :root[data-design="olov"] .fact{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border:0;border-top:var(--bw) dashed var(--line);border-radius:0;padding:10px 14px}
@@ -389,10 +395,10 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 
 /* ---------- Rishton touches ---------- */
 :root[data-design="rishton"] .hero-photo{padding:14px}
-:root[data-design="rishton"] .hero-photo::before{content:"";position:absolute;inset:0;border-radius:999px 999px 42px 42px;
+:root[data-design="rishton"] .hero-photo::before{content:"";position:absolute;inset:0;border-radius:50% 50% 42px 42px;
   background:radial-gradient(circle,var(--surface) 0 1.6px,transparent 2.2px) 0 0/12px 12px,var(--brand)}
 :root[data-design="rishton"] .hero-photo .frame{aspect-ratio:1/1;box-shadow:0 0 0 5px var(--surface),0 0 0 7px var(--accent)}
-@media (min-width:760px){:root[data-design="rishton"] .hero-photo .frame{aspect-ratio:6/7}}
+@media (min-width:760px){:root[data-design="rishton"] .hero-photo .frame{aspect-ratio:6/7;border-radius:50% 50% 28px 28px / 43% 43% 28px 28px}:root[data-design="rishton"] .hero-photo::before{border-radius:50% 50% 42px 42px / 43% 43% 42px 42px}}
 :root[data-design="rishton"] .sticker{right:22px;top:auto;bottom:18%;border-radius:999px;width:auto;height:auto;padding:8px 14px;transform:none;animation:none;background:var(--surface);color:var(--brand);font-size:14px;letter-spacing:0;display:block}
 :root[data-design="rishton"] .sticker small{display:inline;margin:0 0 0 4px}
 :root[data-design="rishton"] h1 span{color:var(--brand)}
@@ -412,7 +418,8 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 
 /* Illustration fills (fallback drawings and the map) */
 .c-bg{fill:var(--surface2)} .c-brand{fill:var(--brand)} .c-acc{fill:var(--accent)} .c-hot{fill:var(--hot)}
-.c-fill{fill:var(--fill)} .c-surf{fill:var(--surface)}
+.c-fill{fill:var(--fill)} .c-surf{fill:var(--surface)} .c-bld{fill:var(--line)}
+:root[data-design="olov"] .c-bld{fill:color-mix(in srgb,var(--ink) 14%,var(--surface2))}
 .c-bread{fill:#E4B46A} .c-bread2{fill:#C98B3D} .c-meat{fill:#7A3B22}
 
 @media (prefers-reduced-motion:no-preference){
@@ -465,7 +472,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
     </div>
     <figure class="hero-photo" id="hero-photo">
       <div class="sticker" id="sticker"></div>
-      <div class="frame"><img id="hero-img" alt="" fetchpriority="high"></div>
+      <div class="frame"><img id="hero-img" alt="" fetchpriority="high" onerror="document.getElementById('hero-photo').hidden=true"></div>
     </figure>
     <div class="hero-act" id="hero-act">
       <div class="actions">
@@ -533,10 +540,10 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
           <path d="M150 -10 L196 270" style="stroke:var(--surface);stroke-width:14;fill:none"/>
           <path d="M310 -10 L284 270" style="stroke:var(--surface);stroke-width:10;fill:none"/>
           <path d="M-10 48 L160 36" style="stroke:var(--surface);stroke-width:8;fill:none"/>
-          <rect x="36" y="64" width="78" height="52" rx="6" style="fill:var(--line)"/>
-          <rect x="212" y="24" width="60" height="70" rx="6" style="fill:var(--line)"/>
-          <rect x="318" y="158" width="66" height="70" rx="6" style="fill:var(--line)"/>
-          <rect x="26" y="184" width="104" height="56" rx="6" style="fill:var(--line)"/>
+          <rect x="36" y="64" width="78" height="52" rx="6" class="c-bld"/>
+          <rect x="212" y="24" width="60" height="70" rx="6" class="c-bld"/>
+          <rect x="318" y="158" width="66" height="70" rx="6" class="c-bld"/>
+          <rect x="26" y="184" width="104" height="56" rx="6" class="c-bld"/>
           <rect x="208" y="160" width="62" height="44" rx="6" class="c-fill" opacity=".45"/>
           <circle cx="240" cy="132" r="28" class="c-brand" opacity=".18"/>
           <path d="M240 136c-10-12-16-20-16-28a16 16 0 0 1 32 0c0 8-6 16-16 28z" class="c-hot"/>
@@ -592,6 +599,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
   <div class="grab"></div>
   <form class="wrap" id="order" novalidate>
     <div class="sheet-head"><h2 id="sheet-h" data-i18n="yourOrder"></h2><button type="button" class="x" data-close>×</button></div>
+    <div class="note-box warn" id="closed-note" hidden></div>
     <div class="lines" id="lines"></div>
     <div class="note-box" id="upsell" hidden></div>
     <div class="mode" id="mode">
@@ -603,15 +611,14 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
       <div class="field"><label for="o-name" data-i18n="nameLbl"></label><input id="o-name" autocomplete="name"></div>
       <div class="field"><label for="o-phone" data-i18n="phoneLbl"></label><input id="o-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 __ ___ __ __" aria-describedby="phone-err"><span class="err" id="phone-err" hidden data-i18n="phoneErr"></span></div>
     </div>
-    <div class="field" id="addr-field"><label for="o-addr" data-i18n="addrLbl"></label><input id="o-addr" autocomplete="street-address"></div>
+    <div class="field" id="addr-field"><label for="o-addr" data-i18n="addrLbl"></label><input id="o-addr" autocomplete="street-address" aria-describedby="addr-err"><span class="err" id="addr-err" hidden data-i18n="addrErr"></span></div>
     <div class="field" id="mark-field"><label for="o-mark" data-i18n="markLbl"></label><input id="o-mark"></div>
     <div class="field"><span class="lbl" id="pay-lbl" data-i18n="payLbl"></span><div class="chips" id="pay" role="group" aria-labelledby="pay-lbl"></div></div>
-    <div class="field" id="change-field"><label for="o-change" data-i18n="changeLbl"></label><input id="o-change" inputmode="numeric"></div>
+    <div class="field" id="change-field"><label for="o-change" data-i18n="changeLbl"></label><input id="o-change" inputmode="numeric" data-ph="changePh"></div>
     <div class="field"><label for="o-note" data-i18n="noteLbl"></label><textarea id="o-note" rows="2"></textarea></div>
     <div class="sum" id="sum"></div>
-    <div class="note-box warn" id="closed-note" hidden></div>
-    <div class="note-box warn" id="min-err" hidden></div>
     <div class="send">
+      <div class="note-box warn" id="min-err" hidden></div>
       <button type="submit" class="btn primary" id="send">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.8 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.9 13l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z"/></svg>
         <span id="send-label"></span>
@@ -621,11 +628,12 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
   </form>
   <div class="wrap done" id="done" hidden>
     <div class="sheet-head" style="width:100%"><span></span><button type="button" class="x" data-close>×</button></div>
-    <div class="big-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="big-tick"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.8 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.9 13l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z"/></svg></div>
     <h2 id="done-h"></h2>
     <p id="done-p"></p>
     <div class="btns">
       <a class="btn primary" id="done-tg" target="_blank" rel="noopener"></a>
+      <button type="button" class="btn ghost" id="done-copy" data-i18n="copy"></button>
       <a class="btn ghost" id="done-call"></a>
       <button type="button" class="btn link" id="new-order" data-i18n="newOrder"></button>
     </div>
@@ -676,8 +684,8 @@ var CONFIG = {
   text: {
     uz: { eyebrow: "Chinobod · kechayu kunduz",
           tagline: "Tandirda yopilgan non, issiq go'sht va sovuq ichimlik. Telegram orqali buyurtma bering, {time} daqiqada yetkazamiz.",
-          address: "Chinobod, Andijon viloyati. Asosiy yo'l bo'yida, \"Diydor\" kafesi yonida.",
-          landmark: "\"Hamkorbank\" Chinobod filiali", sticker: "Tandirdan<small>yangi non</small>" },
+          address: "Chinobod, Andijon viloyati. Asosiy yo'l bo'yida, «Diydor» kafesi yonida.",
+          landmark: "«Hamkorbank» Chinobod filiali", sticker: "Tandirdan<small>yangi non</small>" },
     ru: { eyebrow: "Чинабад · круглосуточно",
           tagline: "Лаваш из тандыра, горячее мясо и холодные напитки. Закажите в Telegram — привезём за {time} минут.",
           address: "Чинабад, Андижанская область. У главной дороги, рядом с кафе «Дийдор».",
@@ -685,17 +693,17 @@ var CONFIG = {
   },
   hits: ["l1", "b2", "l4", "s1"],   // "Eng ko'p buyurtma qilinadi" lentasi
   combo: { id: "c1", items: ["l1", "s1", "d1"], price: 45000,
-           name: { uz: "Kombo \"Doda\"", ru: "Комбо «Дода»" },
-           desc: { uz: "Lavash klassik, kartoshka fri va Coca-Cola 0,5 l", ru: "Лаваш классический, картофель фри и Coca-Cola 0,5 л" } },
+           name: { uz: "«Doda» kombosi", ru: "Комбо «Дода»" },
+           desc: { uz: "Klassik lavash, kartoshka fri va Coca-Cola 0,5 l", ru: "Лаваш классический, картофель фри и Coca-Cola 0,5 л" } },
   menu: [
     { id: "lavash", icon: "lavash",
       title: { uz: "Lavash", ru: "Лаваш" },
       note: { uz: "Tandirda yangi yopilgan non, sara go'sht", ru: "Свежий лаваш из тандыра, отборное мясо" },
       items: [
-        { id: "l1", tag: "hit", price: 28000, weight: "350 g", photo: "rasmlar/l1.webp", name: { uz: "Lavash klassik", ru: "Лаваш классический" }, desc: { uz: "Mol go'shti, pomidor, bodring, chips, maxsus sous", ru: "Говядина, помидор, огурец, чипсы, фирменный соус" } },
-        { id: "l2", price: 32000, weight: "380 g", photo: "rasmlar/l2.webp", name: { uz: "Pishloqli lavash", ru: "Лаваш с сыром" }, desc: { uz: "Klassik lavash va eritilgan pishloq", ru: "Классический лаваш с расплавленным сыром" } },
-        { id: "l3", price: 26000, weight: "330 g", photo: "rasmlar/l3.webp", name: { uz: "Tovuqli lavash", ru: "Лаваш с курицей" }, desc: { uz: "Grilda pishirilgan tovuq, yangi sabzavotlar", ru: "Курица на гриле, свежие овощи" } },
-        { id: "l4", tag: "spicy", price: 29000, weight: "350 g", photo: "rasmlar/l4.webp", name: { uz: "Achchiq lavash", ru: "Острый лаваш" }, desc: { uz: "Halapenyo va qizil qalampir sousi bilan", ru: "С халапеньо и соусом из красного перца" } }
+        { id: "l1", tag: "hit", price: 28000, weight: { uz: "350 g", ru: "350 г" }, photo: "rasmlar/l1.webp", name: { uz: "Klassik lavash", ru: "Лаваш классический" }, desc: { uz: "Mol go'shti, pomidor, bodring, chips, maxsus sous", ru: "Говядина, помидор, огурец, чипсы, фирменный соус" } },
+        { id: "l2", price: 32000, weight: { uz: "380 g", ru: "380 г" }, photo: "rasmlar/l2.webp", name: { uz: "Pishloqli lavash", ru: "Лаваш с сыром" }, desc: { uz: "Klassik lavash va eritilgan pishloq", ru: "Классический лаваш с расплавленным сыром" } },
+        { id: "l3", price: 26000, weight: { uz: "330 g", ru: "330 г" }, photo: "rasmlar/l3.webp", name: { uz: "Tovuqli lavash", ru: "Лаваш с курицей" }, desc: { uz: "Grilda pishirilgan tovuq, yangi sabzavotlar", ru: "Курица на гриле, свежие овощи" } },
+        { id: "l4", tag: "spicy", price: 29000, weight: { uz: "350 g", ru: "350 г" }, photo: "rasmlar/l4.webp", name: { uz: "Achchiq lavash", ru: "Острый лаваш" }, desc: { uz: "Halapenyo va qizil qalampir sousi bilan", ru: "С халапеньо и соусом из красного перца" } }
       ] },
     { id: "burger", icon: "burger",
       title: { uz: "Burger va hot-dog", ru: "Бургеры и хот-доги" },
@@ -747,48 +755,48 @@ var CONFIG = {
 /* ================= Tarjimalar ================= */
 /* Massiv qiymat — rus tilidagi ko'plik shakllari: [1 ta, 2–4 ta, 5+ ta] */
 var I18N = {
-  uz: { design: "Dizayn", demoNote: "Faqat namoyish uchun, mijozlar ko'rmaydi", call: "Qo'ng'iroq", route: "Marshrut qurish", openMap: "Xaritada ochish",
+  uz: { design: "Dizayn", demoNote: "Bu panel faqat namoyish uchun — mijozlar uni ko'rmaydi", call: "Qo'ng'iroq", route: "Marshrut tuzish", openMap: "Xaritada ochish",
         phoneLbl: "Telefon", hoursLbl: "Ish vaqti", avg: "O'rtacha chek", deliveryTime: "Yetkazish", minutes: "daq", all: "Hammasi", menuNav: "Menyu bo'limlari",
-        reviews: "Mijozlar fikri", revEyebrow: "Google'dan", leaveReview: "Google'da sharh qoldiring",
+        reviews: "Mijozlar fikri", revEyebrow: "Google'dan", leaveReview: "Google'da sharh qoldirish",
         findUs: "Bizni qanday topish mumkin", landmarkLbl: "Mo'ljal", madeBy: "Sayt:", yourOrder: "Buyurtmangiz",
-        deliveryOpt: "Yetkazib berish", pickupOpt: "Olib ketish", zoneLbl: "Hudud", nameLbl: "Ismingiz", nameMsg: "Ism", addrLbl: "Manzil",
+        deliveryOpt: "Yetkazib berish", pickupOpt: "Olib ketish", zoneLbl: "Hudud", nameLbl: "Ismingiz", nameMsg: "Ism", addrLbl: "Manzil", addrErr: "Manzil yoki mo'ljalni yozing",
         markLbl: "Mo'ljal (masalan, maktab yonida)", noteLbl: "Izoh (ixtiyoriy)", noteMsg: "Izoh",
-        payLbl: "To'lov", pay_cash: "Naqd", pay_click: "Click", pay_payme: "Payme", pay_terminal: "Kuryerda karta", changeLbl: "Qaysi pulga qaytim kerak?", changeMsg: "Qaytim",
+        payLbl: "To'lov", pay_cash: "Naqd", pay_click: "Click", pay_payme: "Payme", pay_terminal: "Kuryerga karta bilan", changeLbl: "Qancha puldan qaytim kerak?", changePh: "masalan, 200 000", changeMsg: "{n}dan qaytim",
         send: "Telegram'ga yuborish · {n}", copy: "Buyurtma matnini nusxalash", copied: "Nusxalandi", phoneErr: "Telefon raqamini kiriting",
-        openNow: "Hozir ochiq", closed: "Yopiq", opensAt: "soat {t} da ochiladi", closedNote: "Hozir yopiqmiz, {t} da ochilamiz. Buyurtmani oldindan yuborishingiz mumkin.", preorder: "OLDINDAN BUYURTMA",
+        openNow: "Hozir ochiq", closed: "Yopiq", opensAt: "soat {t} da ochiladi", closedNote: "Hozir yopiqmiz, soat {t} da ochilamiz. Buyurtmani oldindan yuborishingiz mumkin.", preorder: "OLDINDAN BUYURTMA",
         h24: "24 soat", everyday: "Har kuni", sum: "so'm", thsum: "ming so'm", items: "ta", cart: "Savatcha", total: "Jami",
-        dfee: "Yetkazish", free: "bepul", freeFrom: "{n}dan boshlab bepul", minOrder: "minimal buyurtma {n}", minErr: "Yetkazish uchun minimal buyurtma {n}. Yana {k} qo'shing.",
-        upsell: "Yana {n}lik buyurtma — yetkazish bepul", reviewsN: "{n} ta sharh", ratingSrc: "Google'da {n} ta sharh",
-        hit: "Xit", spicy: "Achchiq", new: "Yangi", soldOut: "Hozir yo'q", add: "Qo'shish", remove: "Kamaytirish", orderTitle: "Yangi buyurtma",
+        dfee: "Yetkazish", free: "bepul", freeFrom: "{n}dan boshlab bepul", minOrder: "minimal buyurtma {n}", minErr: "Yetkazish uchun minimal buyurtma — {n}. Yana {k}lik taom qo'shing.",
+        upsell: "Yana {n}lik taom qo'shsangiz, yetkazish bepul", reviewsN: "{n} ta sharh", ratingSrc: "Google'da {n} ta sharh",
+        hit: "Xit", spicy: "Achchiq", new: "Yangi", soldOut: "Hozircha yo'q", add: "Qo'shish", remove: "Kamaytirish", orderTitle: "Yangi buyurtma",
         pickupMsg: "Olib ketaman", product: "Buyurtma", hits: "Eng ko'p buyurtma qilinadi", hitsEyebrow: "Mijozlar tanlovi",
         comboEyebrow: "Kombo taklif", save: "{n} tejaysiz", addToCart: "Qo'shish · {n}", added: "Savatchaga qo'shildi", inCart: "{name}: savatchada {n} ta",
         how: "Qanday buyurtma beriladi", howEyebrow: "3 qadam",
-        step1: "Taom tanlang", step1d: "Menyudan \"+\" tugmasi bilan savatchaga qo'shing.",
+        step1: "Taom tanlang", step1d: "Menyudan «+» tugmasi bilan savatchaga qo'shing.",
         step2: "Telegram'ga yuboring", step2d: "Ism, telefon va manzilni yozing, buyurtma tayyor matn bo'lib chatimizga tushadi.",
-        step3: "Buyurtmani oling", step3d: "Operator qo'ng'iroq qilib tasdiqlaydi va {t} daqiqada yetkazamiz.",
-        doneH: "Buyurtma №{no} tayyor", doneP: "Telegram'da ochilgan xabarni yuboring. 5 daqiqada javob bo'lmasa, qo'ng'iroq qiling.",
+        step3: "Buyurtmani oling", step3d: "Operator qo'ng'iroq qilib, buyurtmani tasdiqlaydi. {t} daqiqada yetkazib beramiz.",
+        doneH: "Buyurtma №{no} — Telegram'da yuboring", doneP: "Telegram'da buyurtma matni yozilgan — yuborish tugmasini bosing. Matn chiqmagan bo'lsa, pastdagi tugma bilan nusxalab, chatga joylang. 5 daqiqa ichida javob bermasak, qo'ng'iroq qiling.",
         doneTg: "Telegram'ni qayta ochish", doneCall: "Qo'ng'iroq qilish · {p}", newOrder: "Yangi buyurtma boshlash",
         payInfo: "To'lov", photoCredits: "Rasmlar manbasi", photoBy: "Muallif", close: "Yopish" },
-  ru: { design: "Дизайн", demoNote: "Только для показа, клиенты не видят", call: "Позвонить", route: "Проложить маршрут", openMap: "Открыть на карте",
+  ru: { design: "Дизайн", demoNote: "Панель только для показа — клиенты её не увидят", call: "Позвонить", route: "Проложить маршрут", openMap: "Открыть на карте",
         phoneLbl: "Телефон", hoursLbl: "Часы работы", avg: "Средний чек", deliveryTime: "Доставка", minutes: "мин", all: "Все", menuNav: "Разделы меню",
         reviews: "Отзывы гостей", revEyebrow: "Из Google", leaveReview: "Оставить отзыв в Google",
         findUs: "Как нас найти", landmarkLbl: "Ориентир", madeBy: "Сайт:", yourOrder: "Ваш заказ",
-        deliveryOpt: "Доставка", pickupOpt: "Самовывоз", zoneLbl: "Район", nameLbl: "Ваше имя", nameMsg: "Имя", addrLbl: "Адрес",
+        deliveryOpt: "Доставка", pickupOpt: "Самовывоз", zoneLbl: "Район", nameLbl: "Ваше имя", nameMsg: "Имя", addrLbl: "Адрес", addrErr: "Укажите адрес или ориентир",
         markLbl: "Ориентир (например, у школы)", noteLbl: "Комментарий (необязательно)", noteMsg: "Комментарий",
-        payLbl: "Оплата", pay_cash: "Наличные", pay_click: "Click", pay_payme: "Payme", pay_terminal: "Карта курьеру", changeLbl: "С какой суммы сдача?", changeMsg: "Сдача с",
+        payLbl: "Оплата", pay_cash: "Наличными", pay_click: "Click", pay_payme: "Payme", pay_terminal: "Картой курьеру", changeLbl: "С какой суммы сдача?", changePh: "например, 200 000", changeMsg: "сдача с {n}",
         send: "Отправить в Telegram · {n}", copy: "Скопировать текст заказа", copied: "Скопировано", phoneErr: "Введите номер телефона",
-        openNow: "Сейчас открыто", closed: "Закрыто", opensAt: "откроется в {t}", closedNote: "Сейчас закрыто, откроемся в {t}. Заказ можно отправить заранее.", preorder: "ПРЕДЗАКАЗ",
+        openNow: "Открыто", closed: "Закрыто", opensAt: "откроется в {t}", closedNote: "Сейчас мы закрыты, откроемся в {t}. Заказ можно отправить заранее.", preorder: "ПРЕДЗАКАЗ",
         h24: "24 часа", everyday: "Ежедневно", sum: "сум", thsum: "тыс. сум", items: "шт.", cart: "Корзина", total: "Итого",
-        dfee: "Доставка", free: "бесплатно", freeFrom: "бесплатно от {n}", minOrder: "минимальный заказ {n}", minErr: "Минимальный заказ на доставку — {n}. Добавьте ещё {k}.",
-        upsell: "Ещё {n} — и доставка бесплатно", reviewsN: ["{n} отзыв", "{n} отзыва", "{n} отзывов"], ratingSrc: ["{n} отзыв в Google", "{n} отзыва в Google", "{n} отзывов в Google"],
+        dfee: "Доставка", free: "бесплатно", freeFrom: "бесплатно от {n}", minOrder: "минимальный заказ {n}", minErr: "Минимальный заказ на доставку — {n}. Добавьте ещё на {k}.",
+        upsell: "Добавьте ещё на {n} — и доставка бесплатно", reviewsN: ["{n} отзыв", "{n} отзыва", "{n} отзывов"], ratingSrc: ["{n} отзыв в Google", "{n} отзыва в Google", "{n} отзывов в Google"],
         hit: "Хит", spicy: "Острое", new: "Новинка", soldOut: "Нет в наличии", add: "Добавить", remove: "Уменьшить", orderTitle: "Новый заказ",
         pickupMsg: "Самовывоз", product: "Заказ", hits: "Чаще всего заказывают", hitsEyebrow: "Выбор гостей",
         comboEyebrow: "Комбо-предложение", save: "экономия {n}", addToCart: "Добавить · {n}", added: "Добавлено в корзину", inCart: "{name}: в корзине {n}",
         how: "Как заказать", howEyebrow: "3 шага",
         step1: "Выберите блюда", step1d: "Добавьте в корзину кнопкой «+» в меню.",
         step2: "Отправьте в Telegram", step2d: "Укажите имя, телефон и адрес — заказ придёт к нам готовым сообщением.",
-        step3: "Получите заказ", step3d: "Оператор позвонит и подтвердит заказ, привезём за {t} минут.",
-        doneH: "Заказ №{no} готов", doneP: "Отправьте сообщение, открытое в Telegram. Если ответа нет 5 минут — позвоните.",
+        step3: "Получите заказ", step3d: "Оператор перезвонит и подтвердит заказ. Привезём за {t} минут.",
+        doneH: "Отправьте заказ №{no} в Telegram", doneP: "В Telegram уже набран текст заказа — нажмите кнопку отправки. Если текста нет, скопируйте его кнопкой ниже и вставьте в чат. Если за 5 минут не ответим — позвоните.",
         doneTg: "Открыть Telegram ещё раз", doneCall: "Позвонить · {p}", newOrder: "Начать новый заказ",
         payInfo: "Оплата", photoCredits: "Источники фото", photoBy: "Автор", close: "Закрыть" }
 };
@@ -824,6 +832,8 @@ function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&
 function announce(msg) { var el = $("sr"); el.textContent = ""; setTimeout(function () { el.textContent = msg; }, 30); }
 
 /* ================= Menyu ma'lumotlari ================= */
+CONFIG.hours = CONFIG.hours || { always: true };
+CONFIG.delivery = CONFIG.delivery || { time: "" };
 var ITEMS = {}, CAT_OF = {};
 CONFIG.menu.forEach(function (c) { c.items.forEach(function (it) { ITEMS[it.id] = it; CAT_OF[it.id] = c; }); });
 var ZONES = (CONFIG.delivery && CONFIG.delivery.zones && CONFIG.delivery.zones.length) ? CONFIG.delivery.zones
@@ -905,6 +915,7 @@ function renderStatic() {
   document.title = CONFIG.name;
   document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-close]").forEach(function (el) { el.setAttribute("aria-label", t("close")); });
+  document.querySelectorAll("[data-ph]").forEach(function (el) { el.placeholder = t(el.getAttribute("data-ph")); });
   $("cats-nav").setAttribute("aria-label", t("menuNav"));
   $("pd-minus").setAttribute("aria-label", t("remove")); $("pd-plus").setAttribute("aria-label", t("add"));
   var tx = CONFIG.text[state.lang] || CONFIG.text.uz;
@@ -945,8 +956,10 @@ function renderStatic() {
   $("landmark").textContent = tx.landmark || "";
   var dl = "<dt>" + esc(t("everyday")) + "</dt><dd>" + esc(h.always ? t("h24") : nbr(h.from + " – " + h.to)) + "</dd>";
   ZONES.forEach(function (z) {
-    var parts = [money(z.fee)];
-    if (z.freeFrom) parts.push(t("freeFrom", { n: money(z.freeFrom) }));
+    var feeTxt = z.fee ? money(z.fee) : t("free");
+    var head = L(z.name) ? t("dfee").toLowerCase() + " " + feeTxt : feeTxt;
+    if (z.fee && z.freeFrom) head += " (" + t("freeFrom", { n: money(z.freeFrom) }) + ")";
+    var parts = [head];
     if (z.min) parts.push(t("minOrder", { n: money(z.min) }));
     dl += "<dt>" + esc(L(z.name) || t("dfee")) + "</dt><dd>" + esc(parts.join(", ")) + "</dd>";
   });
@@ -1018,7 +1031,7 @@ function renderMenu() {
     return '<section class="menu-sec" data-cat="' + c.id + '"' + (hidden ? " hidden" : "") + ' aria-labelledby="sec-' + c.id + '"><div class="sec-head"><div><h2 id="sec-' + c.id + '">' + esc(L(c.title)) + "</h2>" +
       (L(c.note) ? '<p class="note">' + esc(L(c.note)) + "</p>" : "") + '</div></div><div class="grid">' +
       c.items.map(function (it) {
-        var w = it.weight ? '<span class="weight">' + esc(it.weight) + "</span>" : "";
+        var w = it.weight ? '<span class="weight">' + esc(L(it.weight)) + "</span>" : "";
         return '<article class="card' + (it.available === false ? " off" : "") + '">' + photoHtml(it, { lazy: true, hiddenBtn: true }) + '<div class="txt"><h3><button type="button" data-open="' + it.id + '">' + esc(L(it.name)) + "</button>" + w + (it.available === false ? "" : tagHtml(it)) + "</h3><p>" + esc(L(it.desc)) + '</p><div class="row"><span class="price">' + money(it.price) + "</span>" + qtyHtml(it.id) + "</div></div></article>";
       }).join("") + "</div></section>";
   }).join("");
@@ -1057,7 +1070,7 @@ function renderSheet() {
   $("addr-field").hidden = !del; $("mark-field").hidden = !del;
   $("zone-field").hidden = !del || ZONES.length < 2;
   if ($("o-zone").dataset.lang !== state.lang) {
-    $("o-zone").innerHTML = ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">' + esc(L(z.name) + " — " + money(z.fee)) + "</option>"; }).join("");
+    $("o-zone").innerHTML = ZONES.map(function (z) { return '<option value="' + esc(z.id) + '">' + esc(L(z.name) + " — " + (z.fee ? money(z.fee) : t("free"))) + "</option>"; }).join("");
     $("o-zone").dataset.lang = state.lang;
   }
   $("o-zone").value = state.zone;
@@ -1071,11 +1084,12 @@ function renderSheet() {
   $("upsell").hidden = !(tt.toFree > 0 && !tt.short);
   $("upsell").textContent = t("upsell", { n: money(tt.toFree) });
   $("min-err").hidden = !tt.short;
-  $("min-err").textContent = t("minErr", { n: money(tt.zone.min), k: money(tt.short) });
+  var me = t("minErr", { n: money(tt.zone.min), k: money(tt.short) });
+  if ($("min-err").textContent !== me) $("min-err").textContent = me;
   var os = openState();
   $("closed-note").hidden = os.open;
   $("closed-note").textContent = os.open ? "" : t("closedNote", { t: os.from });
-  $("send").disabled = !!tt.short;
+  $("send").disabled = !!tt.short; $("copy-btn").disabled = !!tt.short;
   $("send-label").textContent = t("send", { n: money(tt.total) });
 }
 
@@ -1085,7 +1099,7 @@ function renderPd() {
   $("pd-cat").textContent = cat ? L(cat.title) : t("comboEyebrow");
   $("pd-ph").outerHTML = photoHtml(it, { static: true, tag: true, cls: "big", id: "pd-ph" });
   $("pd-h").textContent = L(it.name);
-  $("pd-desc").textContent = L(it.desc) + (it.weight ? " · " + it.weight : "");
+  $("pd-desc").textContent = L(it.desc) + (it.weight ? " · " + L(it.weight) : "");
   $("pd-n").textContent = state.pdN;
   var on = isOn(it.id);
   $("pd-add").disabled = !on; $("pd-minus").disabled = !on; $("pd-plus").disabled = !on;
@@ -1119,12 +1133,16 @@ function orderText() {
   lines.push("");
   if (del) lines.push(t("dfee") + (ZONES.length > 1 ? " (" + L(tt.zone.name) + ")" : "") + ": " + (tt.fee ? money(tt.fee) : t("free")));
   lines.push(t("total") + ": " + money(tt.total));
-  if (state.pay) lines.push(t("payInfo") + ": " + t("pay_" + state.pay) + (state.pay === "cash" && $("o-change").value.trim() ? " · " + t("changeMsg") + " " + $("o-change").value.trim() : ""));
+  if (state.pay) {
+    var ch = $("o-change").value.trim(), chN = +ch.replace(/\D/g, ""), chTxt = "";
+    if (state.pay === "cash" && ch) chTxt = " · " + t("changeMsg", { n: /^[\d\s.,]+$/.test(ch) && chN ? money(chN < 1000 ? chN * 1000 : chN) : ch });
+    lines.push(t("payInfo") + ": " + t("pay_" + state.pay) + chTxt);
+  }
   lines.push("");
   var name = $("o-name").value.trim(), phone = $("o-phone").value.trim(), addr = $("o-addr").value.trim(), mark = $("o-mark").value.trim(), note = $("o-note").value.trim();
   if (name) lines.push(t("nameMsg") + ": " + name);
   lines.push(t("phoneLbl") + ": " + phone);
-  if (del) { lines.push(t("addrLbl") + ": " + (addr || "—")); if (mark) lines.push(t("landmarkLbl") + ": " + mark); }
+  if (del) { if (addr || !mark) lines.push(t("addrLbl") + ": " + (addr || "—")); if (mark) lines.push(t("landmarkLbl") + ": " + mark); }
   else lines.push(t("pickupMsg"));
   if (note) lines.push(t("noteMsg") + ": " + note);
   return lines.join("\n").replace(/ |⁠/g, function (c) { return c === NB ? " " : ""; });
@@ -1151,7 +1169,8 @@ function closeSheets(keepFocus) {
   $("sheet").hidden = true; $("pd").hidden = true; $("scrim").hidden = true;
   $("page").inert = false; document.body.style.overflow = "";
   if (keepFocus || !wasOpen) return;
-  var back = (opener && document.contains(opener) && opener.offsetParent) ? opener : (openerSel && document.querySelector(openerSel)) || $("open-cart") || document.querySelector(".bar .btn");
+  var ok = function (el) { return el && el !== document.body && document.contains(el) && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden" && !el.closest('[aria-hidden="true"]') && !el.closest("[hidden]"); };
+  var back = [opener, openerSel && document.querySelector(openerSel), $("open-cart"), document.querySelector(".bar .btn"), document.querySelector("#rail .plus, #menu .plus")].filter(ok)[0];
   if (back) back.focus({ preventScroll: true });
 }
 
@@ -1175,7 +1194,7 @@ document.addEventListener("click", function (e) {
   if (b.hasAttribute("data-close")) { closeSheets(); return; }
   var q = b.closest(".qty");
   if (q) {
-    var id = q.dataset.id, isPlus = b.classList.contains("plus"), n = (state.cart[id] || 0) + (isPlus ? 1 : -1);
+    var id = q.dataset.id, isPlus = b.classList.contains("plus"), n = Math.min(99, (state.cart[id] || 0) + (isPlus ? 1 : -1));
     var all = document.querySelectorAll('.qty[data-id="' + id + '"]'), idx = Array.prototype.indexOf.call(all, q), inSheet = !!q.closest("#lines");
     if (n > 0) state.cart[id] = n; else delete state.cart[id];
     state.orderNo = null;
@@ -1200,30 +1219,43 @@ document.addEventListener("click", function (e) {
     ["o-note", "o-change"].forEach(function (f) { $(f).value = ""; });
     closeSheets(true); renderAll(); var first = document.querySelector("#rail .plus, #menu .plus"); if (first) first.focus({ preventScroll: true }); return;
   }
-  if (b.id === "copy-btn") {
+  if (b.id === "copy-btn" || b.id === "done-copy") {
     var txt = orderText();
     var done = function () { toast(t("copied")); };
     try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt); done(); }); } catch (err) { fallbackCopy(txt); done(); }
   }
 });
-function fallbackCopy(txt) { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove(); }
+function fallbackCopy(txt) {
+  var back = document.activeElement, host = document.querySelector(".sheet:not([hidden])") || document.body;
+  var ta = document.createElement("textarea"); ta.value = txt; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+  host.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove();
+  if (back && back !== document.body) back.focus({ preventScroll: true });
+}
 $("scrim").addEventListener("click", function () { closeSheets(); });
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("scrim").hidden) closeSheets(); });
 $("o-phone").addEventListener("input", function () { $("phone-err").hidden = true; $("o-phone").removeAttribute("aria-invalid"); });
+["o-addr", "o-mark"].forEach(function (f) { $(f).addEventListener("input", function () { $("addr-err").hidden = true; $("o-addr").removeAttribute("aria-invalid"); }); });
 $("o-zone").addEventListener("change", function () { state.zone = $("o-zone").value; renderSheet(); });
 $("order").addEventListener("submit", function (e) {
   e.preventDefault();
   if (cartTotals().short) return;
-  var digits = $("o-phone").value.replace(/\D/g, "");
-  if (digits.length < 9) { $("phone-err").hidden = false; $("o-phone").setAttribute("aria-invalid", "true"); $("o-phone").focus(); return; }
+  var raw = $("o-phone").value.trim(), d = raw.replace(/\D/g, "");
+  var phoneOk = /^998/.test(d) && (raw.charAt(0) === "+" || d.length > 9) ? d.length === 12  // +998 va 9 raqam
+    : raw.charAt(0) === "+" ? d.length >= 10 && d.length <= 15                                 // boshqa davlat raqami
+    : d.length === 9;                                                                          // 9 raqamli mahalliy
+  if (!phoneOk) { $("phone-err").hidden = false; $("o-phone").setAttribute("aria-invalid", "true"); $("o-phone").focus(); return; }
+  if (state.mode === "delivery" && !$("o-addr").value.trim() && !$("o-mark").value.trim()) {
+    $("addr-err").hidden = false; $("o-addr").setAttribute("aria-invalid", "true"); $("o-addr").focus(); return;
+  }
   var txt = orderText(), link = tgLink(txt);
-  try { navigator.clipboard.writeText(txt).catch(function () {}); } catch (err) {}
+  try { navigator.clipboard.writeText(txt).catch(function () { fallbackCopy(txt); }); } catch (err) { fallbackCopy(txt); }
   var a = document.createElement("a"); a.href = link; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
   // Natija: xabar yuborildi deb aytmaymiz — faqat Telegram ochilganini va keyingi qadamni ko'rsatamiz
   $("order").hidden = true; $("done").hidden = false;
   $("done-h").textContent = t("doneH", { no: orderNo() });
   $("done-p").textContent = t("doneP");
   $("done-tg").href = link; $("done-tg").textContent = t("doneTg");
+  $("done-copy").textContent = t("copy");
   $("done-call").href = "tel:" + CONFIG.phone; $("done-call").textContent = t("doneCall", { p: CONFIG.phoneText });
   $("done").querySelector("[data-close]").focus();
 });
@@ -1234,19 +1266,38 @@ if ("IntersectionObserver" in window) {
 }
 
 /* ================= Narxlarni Google Sheets'dan olish (ixtiyoriy) ================= */
+/* Google Sheets CSV: qo'shtirnoq ichidagi vergul va "30,000.00" kabi formatlarni to'g'ri o'qiydi */
+function parseCsv(t) {
+  var rows = [], row = [], f = "", q = false;
+  for (var i = 0; i < t.length; i++) {
+    var c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f.trim()); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && t[i + 1] === "\n") i++; row.push(f.trim()); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f.trim()); rows.push(row); }
+  return rows;
+}
+function parsePrice(s) {
+  s = String(s || "").replace(/[.,]\d{1,2}(?!\d)(?=\D*$)/, "");
+  var p = parseInt(s.replace(/\D/g, ""), 10);
+  return p >= 100 && p < 1e8 ? p : 0;
+}
 function loadPrices() {
   if (!CONFIG.pricesCsv || !window.fetch) return;
   var ctl = window.AbortController ? new AbortController() : null;
   var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 3000);
   fetch(CONFIG.pricesCsv, ctl ? { signal: ctl.signal } : {}).then(function (r) { return r.ok ? r.text() : ""; }).then(function (csv) {
     clearTimeout(timer);
-    var rows = csv.split(/\r?\n/).map(function (l) { return l.split(",").map(function (c) { return c.trim().replace(/^"|"$/g, ""); }); });
+    var rows = parseCsv(csv);
     var head = (rows.shift() || []).map(function (h) { return h.toLowerCase(); });
     var iId = head.indexOf("id"), iPrice = head.indexOf("price"), iAv = head.indexOf("available");
     if (iId < 0) return;
     rows.forEach(function (r) {
       var it = ITEMS[r[iId]]; if (!it || it.combo) return;
-      var p = parseInt((r[iPrice] || "").replace(/\D/g, ""), 10); if (p > 0) it.price = p;
+      var p = parsePrice(r[iPrice]); if (p) it.price = p;
       if (iAv > -1 && r[iAv] !== "") it.available = !/^(0|no|false|yo'q|нет)$/i.test(r[iAv]);
     });
     if (CONFIG.combo) { CONFIG.combo.full = CONFIG.combo.items.reduce(function (s, id) { return s + ITEMS[id].price; }, 0); ITEMS[CONFIG.combo.id].available = CONFIG.combo.items.every(isOn); }
