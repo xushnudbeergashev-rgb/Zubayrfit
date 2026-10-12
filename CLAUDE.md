@@ -2,6 +2,11 @@
 
 ## Task Observer activation
 
+Observation workspace (`[ABSOLUTE PATH]`): `/home/user/Zubayrfit`, i.e. the
+log lives in `skill-observations/` at the repo root. Cloud containers are
+discarded after each session, so commit and push new or changed
+observation files before the session ends.
+
 <!-- From rebelytics/one-skill-to-rule-them-all, references/environments.md ("The activation block"). -->
 
 Before the first tool call of any session — and before writing or
