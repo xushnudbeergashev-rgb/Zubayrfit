@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="uz" data-design="yashil">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doda Lavash</title>
+<meta name="description" content="Doda Lavash — Chinobod, Andijon. Kechayu kunduz ochiq. Lavash, burger va ichimliklar. Telegram orqali buyurtma.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Doda Lavash — Chinobod, 24/7">
+<meta property="og:description" content="Issiq lavash, burger va sovuq ichimliklar. Menyu va Telegram orqali buyurtma.">
+<meta property="og:image" content="og.jpg">
+<meta name="theme-color" content="#1F5A3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231F5A3E'/%3E%3Ctext x='32' y='43' font-family='Arial' font-weight='900' font-size='30' text-anchor='middle' fill='%23fff'%3EDL%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Golos+Text:wght@400;600;700&family=Manrope:wght@400;600;800&family=Prata&family=Unbounded:wght@600;800&display=swap">
+<style>
+/* Layout: mobile-first single column. Demo switcher strip → hero (name, status, actions, illustration) → facts → sticky category chips → menu sections → reviews → location card → footer. Cart bar fixed at bottom, order sheet slides up. Three designs share one structure: yashil (fresh market), olov (street-food poster), rishton (cobalt ceramics). */
+:root{
+  --bg:#F7F8F3; --surface:#FFFFFF; --surface2:#EEF2E8; --ink:#16241B; --muted:#5A6A5F; --line:#DCE3D6;
+  --brand:#1F5A3E; --brand-ink:#FFFFFF; --accent:#F2B21B; --accent-ink:#1A1A12; --hot:#C8402A; --fill:#7DB65A;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif; --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:18px; --r-sm:12px; --h1:clamp(40px,11vw,72px); --h1-track:-.03em;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1712; --surface:#17221B; --surface2:#1E2C23; --ink:#ECF2EC; --muted:#9FB0A4; --line:#2A3A2F;
+  --brand:#4FA078; --brand-ink:#06110B; --accent:#F6C445; --accent-ink:#1A1A12; --hot:#EC6A52; --fill:#8FC56C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1712; --surface:#17221B; --surface2:#1E2C23; --ink:#ECF2EC; --muted:#9FB0A4; --line:#2A3A2F;
+  --brand:#4FA078; --brand-ink:#06110B; --accent:#F6C445; --accent-ink:#1A1A12; --hot:#EC6A52; --fill:#8FC56C; color-scheme:dark}
+
+/* Olov — street-food poster: mustard paper, black ink, tomato red */
+:root[data-design="olov"]{
+  --bg:#F6CF3E; --surface:#FFF6D6; --surface2:#F1C21F; --ink:#141210; --muted:#4A3F25; --line:#141210;
+  --brand:#141210; --brand-ink:#F6CF3E; --accent:#E2381F; --accent-ink:#FFF6D6; --hot:#C42A14; --fill:#2E8B3E;
+  --display:"Dela Gothic One","Arial Black",system-ui,sans-serif; --body:"Golos Text",system-ui,-apple-system,sans-serif;
+  --r:6px; --r-sm:4px; --h1:clamp(44px,13vw,84px); --h1-track:-.01em}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-design="olov"]{
+  --bg:#17140D; --surface:#221D12; --surface2:#2C2615; --ink:#F7E7B0; --muted:#C2B07A; --line:#F6CF3E;
+  --brand:#F6CF3E; --brand-ink:#17140D; --accent:#F0573D; --accent-ink:#17140D; --hot:#FF7158; --fill:#6CC07B}}
+:root[data-theme="dark"][data-design="olov"]{
+  --bg:#17140D; --surface:#221D12; --surface2:#2C2615; --ink:#F7E7B0; --muted:#C2B07A; --line:#F6CF3E;
+  --brand:#F6CF3E; --brand-ink:#17140D; --accent:#F0573D; --accent-ink:#17140D; --hot:#FF7158; --fill:#6CC07B}
+
+/* Rishton — cobalt glaze, white clay, turquoise */
+:root[data-design="rishton"]{
+  --bg:#F3F6FB; --surface:#FFFFFF; --surface2:#E3EBF7; --ink:#0F1E3D; --muted:#4F5F7E; --line:#D2DCEC;
+  --brand:#1B3F96; --brand-ink:#FFFFFF; --accent:#1FA5A0; --accent-ink:#FFFFFF; --hot:#C2473B; --fill:#1FA5A0;
+  --display:"Prata",Georgia,"Times New Roman",serif; --body:"Golos Text",system-ui,-apple-system,sans-serif;
+  --r:22px; --r-sm:14px; --h1:clamp(44px,12vw,80px); --h1-track:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-design="rishton"]{
+  --bg:#0B1226; --surface:#121C36; --surface2:#182647; --ink:#E7EDFA; --muted:#9CABCB; --line:#24345C;
+  --brand:#7EA2F2; --brand-ink:#0B1226; --accent:#42C7C1; --accent-ink:#0B1226; --hot:#F07A6C; --fill:#42C7C1}}
+:root[data-theme="dark"][data-design="rishton"]{
+  --bg:#0B1226; --surface:#121C36; --surface2:#182647; --ink:#E7EDFA; --muted:#9CABCB; --line:#24345C;
+  --brand:#7EA2F2; --brand-ink:#0B1226; --accent:#42C7C1; --accent-ink:#0B1226; --hot:#F07A6C; --fill:#42C7C1}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);
+  padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));transition:background-color .25s,color .25s}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+svg{display:block}
+
+/* Demo strip — only for showing the owner */
+.demo{background:var(--ink);color:var(--bg);font-size:13px}
+.demo .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-block:8px}
+.demo b{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;opacity:.7}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);background:transparent;color:var(--bg);
+  border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid color-mix(in srgb,var(--bg) 40%,transparent)}
+.demo .spacer{flex:1}
+
+/* Top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:16px 0}
+.logo{display:flex;align-items:center;gap:10px;font:800 15px var(--display);text-decoration:none}
+.logo i{width:38px;height:38px;border-radius:var(--r-sm);background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-style:normal;font-size:14px}
+.status{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;border-radius:999px;padding:5px 12px;
+  background:var(--surface);border:1.5px solid var(--line)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--fill);box-shadow:0 0 0 4px color-mix(in srgb,var(--fill) 25%,transparent)}
+.status.closed i{background:var(--hot);box-shadow:0 0 0 4px color-mix(in srgb,var(--hot) 25%,transparent)}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:1fr;gap:8px;padding-block:20px 8px;align-items:center}
+.hero-text{min-width:0}
+h1{font:800 var(--h1)/.92 var(--display);letter-spacing:var(--h1-track);margin:0 0 14px;text-wrap:balance}
+h1 span{color:var(--hot)}
+.lead{font-size:18px;color:var(--muted);margin:0 0 18px;max-width:36ch}
+.rating{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:18px;text-decoration:none}
+.rating b{color:var(--ink);font-size:16px}
+.stars{display:flex;gap:2px;color:var(--accent)}
+.stars svg{width:16px;height:16px}
+.hero-art{max-width:340px;width:100%;justify-self:center;aspect-ratio:1/1;position:relative}
+.hero-art .disc{position:absolute;inset:6%;border-radius:50%;background:var(--surface2)}
+.hero-art svg{position:relative;width:100%;height:100%}
+.sticker{position:absolute;right:2%;top:6%;background:var(--accent);color:var(--accent-ink);font:800 13px/1.1 var(--display);
+  text-align:center;width:86px;height:86px;border-radius:50%;display:grid;place-items:center;transform:rotate(12deg);padding:8px}
+.sticker small{display:block;font:700 11px var(--body)}
+@media (min-width:700px){.hero{grid-template-columns:1.25fr 1fr;gap:24px}}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions .btn.route{grid-column:1 / -1}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:var(--r-sm);padding:0 16px;
+  font-weight:700;text-decoration:none;font-size:16px;border:0;cursor:pointer;text-align:center}
+.btn svg{width:20px;height:20px;flex:none}
+.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.btn.accent{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.phone{margin:12px 0 0;font-size:14px;color:var(--muted)}
+.phone b{color:var(--ink);font-variant-numeric:tabular-nums;user-select:all}
+
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-block:24px 8px}
+.fact{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px;min-width:0}
+.fact small{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fact b{display:block;font:800 17px/1.2 var(--display);margin-top:4px;font-variant-numeric:tabular-nums}
+@media (max-width:420px){.fact b{font-size:14px}}
+
+/* Category chips */
+nav.cats{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1.5px solid var(--line);margin-top:16px}
+.cats .wrap{display:flex;gap:8px;overflow-x:auto;padding-block:12px;scrollbar-width:none}
+.cats .wrap::-webkit-scrollbar{display:none}
+.cats button{flex:none;font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--line)}
+.cats button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Menu */
+.menu{padding-top:12px}
+.sec-head{display:grid;grid-template-columns:1fr 84px;gap:12px;align-items:end;margin:28px 0 6px}
+.sec-head svg{width:84px;height:64px}
+h2{font:800 clamp(26px,7vw,34px)/1.05 var(--display);margin:0;text-wrap:balance}
+.note{font-size:14px;color:var(--muted);margin:4px 0 0}
+.item{display:grid;grid-template-columns:1fr auto;gap:4px 14px;padding-block:16px;border-bottom:1.5px dashed var(--line);align-items:start}
+.item .txt{min-width:0}
+.item h3{margin:0;font-size:17px;font-weight:700;line-height:1.3}
+.item p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.item .price{display:block;margin-top:6px;font-weight:800;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:2px;background:var(--hot);color:#fff}
+.tag.new{background:var(--fill)}
+.qty{display:flex;align-items:center;gap:2px;background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.qty button{width:36px;height:36px;border-radius:50%;border:0;background:transparent;cursor:pointer;font-size:20px;font-weight:700;line-height:1;display:grid;place-items:center}
+.qty .plus{background:var(--brand);color:var(--brand-ink)}
+.qty span{min-width:22px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+.qty:not(.has) .minus,.qty:not(.has) span{display:none}
+.qty:not(.has){border-color:transparent;background:transparent}
+
+/* Reviews */
+.reviews{margin-top:40px}
+.rev-head{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:14px}
+.rev-score{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:8px;color:var(--muted);font-size:14px}
+.rev-score b{font:800 40px/1 var(--display);color:var(--ink)}
+.rev-list{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:700px){.rev-list{grid-template-columns:repeat(3,1fr)}}
+.rev{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.rev p{margin:0;font-size:15px}
+.rev footer{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-top:auto}
+.rev footer b{color:var(--ink)}
+.btn.small{min-height:44px;font-size:15px}
+
+/* Location */
+.where{margin-top:40px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden}
+.map{position:relative;aspect-ratio:16/8;max-width:100%;background:var(--surface2);overflow:hidden}
+.map svg{width:100%;height:100%}
+.where .body{padding:18px 20px 20px;display:grid;gap:14px}
+.where p{margin:0;color:var(--muted)}
+.where p b{color:var(--ink)}
+.where .links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hours{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:14px;margin:0}
+.hours dt{color:var(--muted)}
+.hours dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+
+footer.site{padding-block:32px 24px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between}
+footer.site a{font-weight:700;text-decoration:none;border-bottom:1.5px solid var(--line)}
+
+/* Cart bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--bg);border-top:1.5px solid var(--line);
+  padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))}
+.bar .wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bar .wrap.cart{grid-template-columns:1fr}
+.cartbtn{justify-content:space-between}
+.cartbtn .count{background:var(--brand-ink);color:var(--brand);border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;font-size:14px;font-weight:800;padding:0 8px}
+
+/* Order sheet */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(10,12,10,.5)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--bg);border-radius:var(--r) var(--r) 0 0;max-height:88vh;overflow:auto;
+  padding:8px 0 calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.sheet .wrap{display:grid;gap:14px}
+.grab{width:44px;height:5px;border-radius:9px;background:var(--line);margin:4px auto 4px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center}
+.sheet-head h2{font-size:24px}
+.x{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-size:20px;line-height:1}
+.lines{display:grid;gap:8px}
+.line{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:8px 8px 8px 14px}
+.line .nm{min-width:0;font-weight:700;font-size:15px}
+.line .nm small{display:block;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);padding:4px;border-radius:var(--r-sm)}
+.mode button{border:0;border-radius:calc(var(--r-sm) - 4px);padding:10px;font-weight:700;cursor:pointer;background:transparent}
+.mode button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.field{display:grid;gap:4px}
+.field label{font-size:13px;font-weight:700;color:var(--muted)}
+.field input,.field textarea{font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;width:100%}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--brand)}
+.field .err{color:var(--hot);font-size:13px;font-weight:600}
+.sum{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+.sum .t{font:800 20px var(--display)}
+.sum span:nth-child(odd){color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.send{display:grid;grid-template-columns:1fr;gap:8px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px}
+
+/* Design-specific touches */
+:root[data-design="olov"] .btn,:root[data-design="olov"] .fact,:root[data-design="olov"] .rev,:root[data-design="olov"] .where,
+:root[data-design="olov"] .cats button,:root[data-design="olov"] .status{border:2.5px solid var(--line)}
+:root[data-design="olov"] .btn.primary,:root[data-design="olov"] .btn.accent{box-shadow:4px 4px 0 var(--line)}
+:root[data-design="olov"] h1{text-transform:uppercase}
+:root[data-design="olov"] .hero-art .disc{border-radius:var(--r);transform:rotate(-4deg);background:var(--surface);border:2.5px solid var(--line)}
+:root[data-design="olov"] .item{border-bottom-style:solid}
+:root[data-design="olov"] .tag{border-radius:3px}
+:root[data-design="rishton"] .hero-art .disc{background:
+  radial-gradient(circle at center,var(--surface) 0 44%,transparent 44.5%),
+  repeating-conic-gradient(from 0deg,var(--brand) 0 7.5deg,var(--surface2) 7.5deg 15deg);
+  box-shadow:inset 0 0 0 10px var(--brand),inset 0 0 0 14px var(--surface)}
+:root[data-design="rishton"] h1 span{color:var(--brand);font-style:italic}
+:root[data-design="rishton"] .demo{background:var(--brand);color:var(--brand-ink)}
+:root[data-design="rishton"] .demo .seg button{color:var(--brand-ink)}
+:root[data-design="rishton"] .demo .seg button[aria-pressed="true"]{background:var(--brand-ink);color:var(--brand)}
+:root[data-design="rishton"] .sec-head{border-top:6px double var(--line);padding-top:16px}
+
+/* Illustration fills */
+.c-bg{fill:var(--surface2)} .c-brand{fill:var(--brand)} .c-acc{fill:var(--accent)} .c-hot{fill:var(--hot)}
+.c-fill{fill:var(--fill)} .c-surf{fill:var(--surface)} .c-ink{fill:var(--ink)} .c-line{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.c-bread{fill:#E4B46A} .c-bread2{fill:#C98B3D} .c-meat{fill:#7A3B22}
+
+@media (prefers-reduced-motion:no-preference){
+  .btn,.qty button{transition:transform .12s}
+  .btn:active,.qty button:active{transform:scale(.96)}
+  .sheet:not([hidden]){animation:up .22s ease-out}
+  @keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+  .sticker{animation:wob 6s ease-in-out infinite}
+  @keyframes wob{50%{transform:rotate(4deg)}}
+}
+@media (min-width:900px){body{padding-bottom:96px}}
+</style>
+</head>
+<body>
+
+<div class="demo" id="demo">
+  <div class="wrap">
+    <b data-i18n="design">Dizayn</b>
+    <div class="seg" id="designs">
+      <button type="button" id="d-yashil" data-design="yashil" aria-pressed="true"><i class="dot" style="background:#1F5A3E"></i>Yashil</button>
+      <button type="button" id="d-olov" data-design="olov" aria-pressed="false"><i class="dot" style="background:#F6CF3E"></i>Olov</button>
+      <button type="button" id="d-rishton" data-design="rishton" aria-pressed="false"><i class="dot" style="background:#1B3F96"></i>Rishton</button>
+    </div>
+    <span class="spacer"></span>
+    <div class="seg" id="langs">
+      <button type="button" id="l-uz" data-lang="uz" aria-pressed="true">UZ</button>
+      <button type="button" id="l-ru" data-lang="ru" aria-pressed="false">RU</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <a class="logo" href="#"><i id="logo-mark">DL</i><span id="logo-name">Doda Lavash</span></a>
+    <span class="status" id="status"><i></i><span id="status-text"></span></span>
+  </div>
+
+  <header class="hero">
+    <div class="hero-text">
+      <h1 id="h1"></h1>
+      <p class="lead" id="tagline"></p>
+      <a class="rating" id="rating" target="_blank" rel="noopener">
+        <span class="stars" id="stars"></span><b id="rating-num"></b><span id="rating-count"></span>
+      </a>
+      <div class="actions">
+        <a class="btn primary" id="call">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+          <span data-i18n="call"></span>
+        </a>
+        <a class="btn ghost" id="tg" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.8 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.9 13l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z"/></svg>
+          Telegram
+        </a>
+        <a class="btn accent route" id="route" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <span data-i18n="route"></span>
+        </a>
+      </div>
+      <p class="phone"><span data-i18n="phoneLbl"></span>: <b id="phone-text"></b></p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="disc"></div>
+      <svg viewBox="0 0 200 200">
+        <!-- lavash wrap, diagonal -->
+        <g transform="rotate(-28 100 100)">
+          <rect x="62" y="30" width="76" height="150" rx="34" class="c-bread"/>
+          <path d="M62 112h76v34a34 34 0 0 1-34 34h-8a34 34 0 0 1-34-34z" class="c-surf"/>
+          <path d="M62 112h76" class="c-line" style="stroke-dasharray:4 6"/>
+          <ellipse cx="100" cy="44" rx="38" ry="18" class="c-bread2"/>
+          <ellipse cx="100" cy="44" rx="30" ry="12" class="c-meat"/>
+          <circle cx="86" cy="40" r="6" class="c-fill"/><circle cx="110" cy="38" r="6" class="c-hot"/>
+          <circle cx="100" cy="48" r="5" class="c-acc"/><circle cx="118" cy="47" r="4" class="c-fill"/>
+          <path d="M70 70q4 14 0 30M128 66q-4 14 0 30" class="c-line" style="stroke:var(--bread-line,#C98B3D)"/>
+        </g>
+        <!-- sauce drops -->
+        <circle cx="34" cy="150" r="9" class="c-hot"/><circle cx="168" cy="52" r="7" class="c-fill"/><circle cx="176" cy="150" r="5" class="c-acc"/>
+      </svg>
+      <div class="sticker" id="sticker"></div>
+    </div>
+  </header>
+
+  <div class="facts">
+    <div class="fact"><small data-i18n="hoursLbl"></small><b id="f-hours"></b></div>
+    <div class="fact"><small data-i18n="avg"></small><b id="f-avg"></b></div>
+    <div class="fact"><small data-i18n="deliveryLbl"></small><b id="f-del"></b></div>
+  </div>
+</div>
+
+<nav class="cats" aria-label="Menyu">
+  <div class="wrap" id="cats"></div>
+</nav>
+
+<main class="wrap">
+  <div id="menu"></div>
+
+  <section class="reviews" aria-labelledby="rev-h">
+    <div class="rev-head">
+      <div>
+        <h2 id="rev-h" data-i18n="reviews"></h2>
+        <div class="rev-score"><b id="rev-num"></b><span class="stars" id="rev-stars"></span><span id="rev-count"></span></div>
+      </div>
+      <a class="btn ghost small" id="review-btn" target="_blank" rel="noopener" data-i18n="leaveReview"></a>
+    </div>
+    <div class="rev-list" id="rev-list"></div>
+  </section>
+
+  <section class="where" aria-labelledby="where-h">
+    <div class="map" aria-hidden="true">
+      <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+        <rect width="400" height="200" class="c-bg"/>
+        <path d="M-10 128 L410 96" style="stroke:var(--surface);stroke-width:22;fill:none"/>
+        <path d="M150 -10 L190 210" style="stroke:var(--surface);stroke-width:14;fill:none"/>
+        <path d="M300 -10 L280 210" style="stroke:var(--surface);stroke-width:10;fill:none"/>
+        <path d="M-10 40 L160 30" style="stroke:var(--surface);stroke-width:8;fill:none"/>
+        <rect x="40" y="56" width="70" height="40" rx="6" style="fill:var(--line)"/>
+        <rect x="210" y="20" width="56" height="54" rx="6" style="fill:var(--line)"/>
+        <rect x="320" y="128" width="64" height="50" rx="6" style="fill:var(--line)"/>
+        <rect x="30" y="148" width="100" height="40" rx="6" style="fill:var(--line)"/>
+        <rect x="206" y="128" width="58" height="36" rx="6" class="c-fill" opacity=".45"/>
+        <circle cx="236" cy="104" r="26" class="c-brand" opacity=".18"/>
+        <path d="M236 108c-10-12-16-20-16-28a16 16 0 0 1 32 0c0 8-6 16-16 28z" class="c-hot"/>
+        <circle cx="236" cy="80" r="6" class="c-surf"/>
+      </svg>
+    </div>
+    <div class="body">
+      <h2 id="where-h" data-i18n="findUs"></h2>
+      <p id="addr"></p>
+      <p><b data-i18n="landmarkLbl"></b>: <span id="landmark"></span></p>
+      <dl class="hours" id="hours"></dl>
+      <div class="links">
+        <a class="btn primary small" id="gmaps" target="_blank" rel="noopener">Google Maps</a>
+        <a class="btn ghost small" id="ymaps" target="_blank" rel="noopener">Yandex Maps</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site">
+    <span id="copy"></span>
+    <span><span data-i18n="madeBy"></span> <a id="maker" target="_blank" rel="noopener"></a></span>
+  </footer>
+</main>
+
+<div class="bar">
+  <div class="wrap" id="bar"></div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" hidden>
+  <div class="grab"></div>
+  <form class="wrap" id="order" novalidate>
+    <div class="sheet-head"><h2 id="sheet-h" data-i18n="yourOrder"></h2><button type="button" class="x" id="close" aria-label="Yopish">×</button></div>
+    <div class="lines" id="lines"></div>
+    <div class="mode" id="mode">
+      <button type="button" id="m-del" data-mode="delivery" aria-pressed="true" data-i18n="deliveryOpt"></button>
+      <button type="button" id="m-pick" data-mode="pickup" aria-pressed="false" data-i18n="pickupOpt"></button>
+    </div>
+    <div class="field"><label for="o-name" data-i18n="nameLbl"></label><input id="o-name" autocomplete="name"></div>
+    <div class="field"><label for="o-phone" data-i18n="phoneLbl"></label><input id="o-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+998 __ ___ __ __"><span class="err" id="phone-err" hidden data-i18n="phoneErr"></span></div>
+    <div class="field" id="addr-field"><label for="o-addr" data-i18n="addrLbl"></label><input id="o-addr" autocomplete="street-address"></div>
+    <div class="field"><label for="o-note" data-i18n="noteLbl"></label><textarea id="o-note" rows="2"></textarea></div>
+    <div class="sum" id="sum"></div>
+    <div class="send">
+      <button type="submit" class="btn primary" id="send">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.8 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.5.5-1 .5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L6.9 13l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z"/></svg>
+        <span data-i18n="send"></span>
+      </button>
+      <button type="button" class="btn ghost" id="copy-btn" data-i18n="copy"></button>
+      <p class="hint" data-i18n="sendHint"></p>
+    </div>
+  </form>
+</section>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================================================================
+   SOZLAMALAR — har bir yangi mijoz uchun faqat shu blokni o'zgartiring
+   ================================================================ */
+var CONFIG = {
+  name: "Doda Lavash",
+  nameAccent: "Lavash",            // sarlavhada rangli bo'lib chiqadigan qism
+  logo: "DL",
+  design: "yashil",                // yashil | olov | rishton
+  phone: "+998936729909",
+  phoneText: "+998 93 672 99 09",
+  telegram: "dodalavash",          // username, @ belgisiz
+  hours: { always: true },         // yoki { from: "09:00", to: "02:00" }
+  avgCheck: "30–60",               // ming so'm
+  rating: 4.8, reviewsCount: 126,
+  delivery: { fee: 7000, freeFrom: 100000 },
+  googleMaps: "https://www.google.com/maps/place/Doda+Lavash/@40.877039,71.9748075,17z",
+  googleReview: "https://www.google.com/maps/place/Doda+Lavash/@40.877039,71.9748075,17z",
+  yandexMaps: "https://yandex.uz/maps/?pt=71.9748075,40.877039&z=17&l=map",
+  maker: { name: "Sizning studiyangiz", url: "https://t.me/" },
+  year: 2026,
+  text: {
+    uz: { tagline: "Issiq lavash, burger va sovuq ichimliklar. Chinobod markazida, kechayu kunduz.",
+          address: "Chinobod, Andijon viloyati. Asosiy yo'l bo'yida, \"Diydor\" kafesi yonida.",
+          landmark: "\"Hamkorbank\" Chinobod filiali", sticker: "Tandirdan<br><small>yangi non</small>" },
+    ru: { tagline: "Горячий лаваш, бургеры и холодные напитки. В центре Чинабада, круглосуточно.",
+          address: "Чинабад, Андижанская область. На главной дороге, рядом с кафе «Дийдор».",
+          landmark: "Чинабадский филиал «Хамкорбанка»", sticker: "Свежий<br><small>из тандыра</small>" }
+  },
+  menu: [
+    { id: "lavash", icon: "lavash",
+      title: { uz: "Lavash", ru: "Лаваш" },
+      note: { uz: "Tandirda yangi yopilgan non, tanlangan go'sht", ru: "Свежая лепёшка из тандыра, отборное мясо" },
+      items: [
+        { id: "l1", tag: "hit", price: 28000, name: { uz: "Lavash klassik", ru: "Лаваш классический" }, desc: { uz: "Mol go'shti, pomidor, bodring, chips, maxsus sous", ru: "Говядина, помидор, огурец, чипсы, фирменный соус" } },
+        { id: "l2", price: 32000, name: { uz: "Pishloqli lavash", ru: "Лаваш с сыром" }, desc: { uz: "Klassik lavash va eritilgan pishloq", ru: "Классический лаваш с плавленым сыром" } },
+        { id: "l3", price: 26000, name: { uz: "Tovuqli lavash", ru: "Лаваш с курицей" }, desc: { uz: "Grilda pishgan tovuq, yangi sabzavotlar", ru: "Курица на гриле, свежие овощи" } },
+        { id: "l4", tag: "spicy", price: 29000, name: { uz: "Achchiq lavash", ru: "Острый лаваш" }, desc: { uz: "Halapenyo va qizil qalampir sousi bilan", ru: "С халапеньо и соусом из красного перца" } }
+      ] },
+    { id: "burger", icon: "burger",
+      title: { uz: "Burger va hot-dog", ru: "Бургеры и хот-доги" },
+      note: { uz: "Kotletlar har kuni o'zimizda tayyorlanadi", ru: "Котлеты готовим сами каждый день" },
+      items: [
+        { id: "b1", price: 25000, name: { uz: "Gamburger", ru: "Гамбургер" }, desc: { uz: "Mol go'shtidan kotlet, salat, sous", ru: "Котлета из говядины, салат, соус" } },
+        { id: "b2", tag: "new", price: 28000, name: { uz: "Chizburger", ru: "Чизбургер" }, desc: { uz: "Ikki qavat pishloq bilan", ru: "С двойным сыром" } },
+        { id: "b3", price: 15000, name: { uz: "Hot-dog", ru: "Хот-дог" }, desc: { uz: "Sosiska, tuzlangan bodring, ketchup va xantal", ru: "Сосиска, маринованный огурец, кетчуп и горчица" } }
+      ] },
+    { id: "side", icon: "fries",
+      title: { uz: "Garnir", ru: "Гарниры" },
+      note: { uz: "", ru: "" },
+      items: [
+        { id: "s1", price: 15000, name: { uz: "Kartoshka fri", ru: "Картофель фри" }, desc: { uz: "Katta porsiya", ru: "Большая порция" } },
+        { id: "s2", price: 20000, name: { uz: "Naggets, 6 dona", ru: "Наггетсы, 6 шт." }, desc: { uz: "Sous bilan", ru: "С соусом" } }
+      ] },
+    { id: "drink", icon: "drink",
+      title: { uz: "Ichimliklar", ru: "Напитки" },
+      note: { uz: "", ru: "" },
+      items: [
+        { id: "d1", price: 8000, name: { uz: "Coca-Cola, 0,5 l", ru: "Coca-Cola, 0,5 л" }, desc: { uz: "Sovuq", ru: "Холодная" } },
+        { id: "d2", price: 6000, name: { uz: "Ayron", ru: "Айран" }, desc: { uz: "Uyda tayyorlangan", ru: "Домашний" } },
+        { id: "d3", price: 3000, name: { uz: "Ko'k choy", ru: "Зелёный чай" }, desc: { uz: "Choynakda", ru: "В чайнике" } }
+      ] }
+  ],
+  reviews: [
+    { name: "Jasur", stars: 5, when: { uz: "2 hafta oldin", ru: "2 недели назад" }, text: { uz: "Kechasi soat 3 da ham issiq lavash topiladigan yagona joy. Sousi zo'r.", ru: "Единственное место, где в 3 ночи есть горячий лаваш. Соус отличный." } },
+    { name: "Dilnoza", stars: 5, when: { uz: "1 oy oldin", ru: "месяц назад" }, text: { uz: "Pishloqli lavashni oldim, porsiya katta. Telegram orqali buyurtma qilish qulay.", ru: "Брала лаваш с сыром, порция большая. Заказывать через Telegram удобно." } },
+    { name: "Sardor", stars: 4, when: { uz: "1 oy oldin", ru: "месяц назад" }, text: { uz: "Burgerlar yaxshi, kartoshka fri biroz sovib qoldi. Narxlar arzon.", ru: "Бургеры хорошие, фри немного остыла. Цены низкие." } }
+  ]
+};
+
+/* ================= Tarjimalar ================= */
+var I18N = {
+  uz: { design: "Dizayn", call: "Qo'ng'iroq", route: "Yo'nalish olish", phoneLbl: "Telefon", hoursLbl: "Ish vaqti", avg: "O'rtacha chek",
+        deliveryLbl: "Yetkazish", all: "Hammasi", reviews: "Mijozlar fikri", leaveReview: "Google'da sharh qoldiring",
+        findUs: "Bizni qanday topish mumkin", landmarkLbl: "Mo'ljal", madeBy: "Sayt:", yourOrder: "Buyurtmangiz",
+        deliveryOpt: "Yetkazib berish", pickupOpt: "Olib ketaman", nameLbl: "Ismingiz", addrLbl: "Manzil", noteLbl: "Izoh (ixtiyoriy)",
+        send: "Telegram orqali yuborish", copy: "Matnni nusxalash", copied: "Nusxalandi", phoneErr: "Telefon raqamini kiriting",
+        sendHint: "Telegram ochiladi, xabarni {tg} chatiga yuboring.", openNow: "Hozir ochiq", closed: "Yopiq", opensAt: "{t} da ochiladi",
+        h24: "24 soat", everyday: "Har kuni", sum: "so'm", thsum: "ming so'm", items: "ta", cart: "Savatcha", total: "Jami",
+        dfee: "Yetkazish", free: "bepul", freeFrom: "{n} dan bepul", reviewsN: "{n} ta sharh", ratingSrc: "Google'da {n} ta sharh",
+        hit: "Xit", spicy: "Achchiq", new: "Yangi", add: "Qo'shish", remove: "Kamaytirish", orderTitle: "Yangi buyurtma",
+        pickupMsg: "Olib ketaman", product: "Mahsulot", emptyNote: "", clear: "Tozalash" },
+  ru: { design: "Дизайн", call: "Позвонить", route: "Проложить маршрут", phoneLbl: "Телефон", hoursLbl: "Часы работы", avg: "Средний чек",
+        deliveryLbl: "Доставка", all: "Все", reviews: "Отзывы гостей", leaveReview: "Оставить отзыв в Google",
+        findUs: "Как нас найти", landmarkLbl: "Ориентир", madeBy: "Сайт:", yourOrder: "Ваш заказ",
+        deliveryOpt: "Доставка", pickupOpt: "Самовывоз", nameLbl: "Ваше имя", addrLbl: "Адрес", noteLbl: "Комментарий (необязательно)",
+        send: "Отправить в Telegram", copy: "Скопировать текст", copied: "Скопировано", phoneErr: "Введите номер телефона",
+        sendHint: "Откроется Telegram, отправьте сообщение в чат {tg}.", openNow: "Сейчас открыто", closed: "Закрыто", opensAt: "Откроется в {t}",
+        h24: "24 часа", everyday: "Ежедневно", sum: "сум", thsum: "тыс. сум", items: "шт.", cart: "Корзина", total: "Итого",
+        dfee: "Доставка", free: "бесплатно", freeFrom: "бесплатно от {n}", reviewsN: "{n} отзывов", ratingSrc: "{n} отзывов в Google",
+        hit: "Хит", spicy: "Острое", new: "Новинка", add: "Добавить", remove: "Убрать", orderTitle: "Новый заказ",
+        pickupMsg: "Самовывоз", product: "Товар", emptyNote: "", clear: "Очистить" }
+};
+
+/* ================= Rasmlar (SVG) ================= */
+var ICONS = {
+  lavash: '<svg viewBox="0 0 84 64"><g transform="rotate(-30 42 32)"><rect x="26" y="4" width="32" height="62" rx="15" class="c-bread"/><path d="M26 38h32v13a15 15 0 0 1-15 15h-2a15 15 0 0 1-15-15z" class="c-surf"/><ellipse cx="42" cy="10" rx="16" ry="8" class="c-meat"/><circle cx="36" cy="9" r="3" class="c-fill"/><circle cx="46" cy="8" r="3" class="c-hot"/></g></svg>',
+  burger: '<svg viewBox="0 0 84 64"><path d="M14 30a28 20 0 0 1 56 0z" class="c-bread"/><circle cx="32" cy="20" r="1.6" class="c-surf"/><circle cx="44" cy="16" r="1.6" class="c-surf"/><circle cx="54" cy="22" r="1.6" class="c-surf"/><path d="M12 32q5 5 10 0t10 0 10 0 10 0 10 0 10 0v4H12z" class="c-fill"/><path d="M14 36h56l-6 8H20z" class="c-acc"/><rect x="12" y="40" width="60" height="9" rx="4.5" class="c-meat"/><rect x="14" y="50" width="56" height="10" rx="5" class="c-bread2"/></svg>',
+  fries: '<svg viewBox="0 0 84 64"><rect x="28" y="6" width="6" height="34" rx="2" class="c-acc" transform="rotate(-8 31 23)"/><rect x="37" y="2" width="6" height="36" rx="2" class="c-acc"/><rect x="46" y="4" width="6" height="34" rx="2" class="c-acc" transform="rotate(6 49 21)"/><rect x="54" y="8" width="6" height="30" rx="2" class="c-acc" transform="rotate(12 57 23)"/><path d="M22 26h40l-5 36H27z" class="c-hot"/><path d="M30 38a12 8 0 0 0 24 0" class="c-line" style="stroke:var(--surface)"/></svg>',
+  drink: '<svg viewBox="0 0 84 64"><path d="M50 2l-6 14" class="c-line" style="stroke:var(--hot);stroke-width:4"/><rect x="26" y="14" width="32" height="7" rx="3" class="c-brand"/><path d="M28 21h28l-4 41H32z" class="c-surf" style="stroke:var(--brand);stroke-width:2.5"/><path d="M30 34h24l-2.6 28H32.6z" class="c-hot"/><circle cx="38" cy="44" r="2" class="c-surf"/><circle cx="45" cy="52" r="1.6" class="c-surf"/></svg>'
+};
+var STAR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>';
+
+/* ================= Holat ================= */
+var state = { lang: "uz", design: CONFIG.design, cat: "all", cart: {}, mode: "delivery" };
+try { var saved = JSON.parse(localStorage.getItem("site-demo") || "{}"); if (saved.cart) state.cart = saved.cart; if (saved.lang) state.lang = saved.lang; if (saved.design) state.design = saved.design; } catch (e) {}
+function persist() { try { localStorage.setItem("site-demo", JSON.stringify({ cart: state.cart, lang: state.lang, design: state.design })); } catch (e) {} }
+
+var $ = function (id) { return document.getElementById(id); };
+function t(key, vars) { var s = (I18N[state.lang][key] || key); for (var k in (vars || {})) s = s.replace("{" + k + "}", vars[k]); return s; }
+function L(obj) { return obj ? (obj[state.lang] || obj.uz || "") : ""; }
+function money(n) { return n.toLocaleString("ru-RU").replace(/ /g, " ") + " " + t("sum"); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+var ITEMS = {}; CONFIG.menu.forEach(function (c) { c.items.forEach(function (it) { ITEMS[it.id] = it; }); });
+Object.keys(state.cart).forEach(function (id) { if (!ITEMS[id]) delete state.cart[id]; });
+
+/* ================= Ochiq/yopiq ================= */
+function tashkentMinutes() {
+  var p = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  var h = 0, m = 0; p.forEach(function (x) { if (x.type === "hour") h = +x.value % 24; if (x.type === "minute") m = +x.value; });
+  return h * 60 + m;
+}
+function toMin(s) { var a = s.split(":"); return (+a[0]) * 60 + (+a[1]); }
+function openState() {
+  var h = CONFIG.hours; if (h.always) return { open: true };
+  var now = tashkentMinutes(), f = toMin(h.from), to = toMin(h.to);
+  var open = f < to ? (now >= f && now < to) : (now >= f || now < to);
+  return { open: open, from: h.from };
+}
+
+/* ================= Chizish ================= */
+function renderStatic() {
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(function (el) { el.textContent = t(el.getAttribute("data-i18n")); });
+  var hint = document.querySelector('[data-i18n="sendHint"]'); hint.textContent = t("sendHint", { tg: "@" + CONFIG.telegram });
+  var nm = esc(CONFIG.name), acc = esc(CONFIG.nameAccent);
+  $("h1").innerHTML = acc && nm.indexOf(acc) > -1 ? nm.replace(acc, "<span>" + acc + "</span>") : nm;
+  $("logo-mark").textContent = CONFIG.logo; $("logo-name").textContent = CONFIG.name;
+  $("tagline").textContent = CONFIG.text[state.lang].tagline;
+  $("sticker").innerHTML = CONFIG.text[state.lang].sticker;
+  $("call").href = "tel:" + CONFIG.phone; $("phone-text").textContent = CONFIG.phoneText;
+  $("tg").href = "https://t.me/" + CONFIG.telegram;
+  $("route").href = CONFIG.googleMaps; $("gmaps").href = CONFIG.googleMaps; $("ymaps").href = CONFIG.yandexMaps;
+  $("rating").href = CONFIG.googleMaps; $("review-btn").href = CONFIG.googleReview;
+  var stars = ""; for (var i = 0; i < 5; i++) stars += STAR;
+  $("stars").innerHTML = stars; $("rev-stars").innerHTML = stars;
+  $("rating-num").textContent = CONFIG.rating.toFixed(1).replace(".", ",");
+  $("rating-count").textContent = t("ratingSrc", { n: CONFIG.reviewsCount });
+  $("rev-num").textContent = CONFIG.rating.toFixed(1).replace(".", ",");
+  $("rev-count").textContent = t("reviewsN", { n: CONFIG.reviewsCount });
+
+  var os = openState();
+  $("status").classList.toggle("closed", !os.open);
+  $("status-text").textContent = os.open ? t("openNow") + (CONFIG.hours.always ? " · 24/7" : "") : t("closed") + " · " + t("opensAt", { t: os.from });
+  $("f-hours").textContent = CONFIG.hours.always ? "24/7" : CONFIG.hours.from + "–" + CONFIG.hours.to;
+  $("f-avg").textContent = CONFIG.avgCheck + " " + t("thsum");
+  $("f-del").textContent = money(CONFIG.delivery.fee);
+  $("addr").textContent = CONFIG.text[state.lang].address;
+  $("landmark").textContent = CONFIG.text[state.lang].landmark;
+  $("hours").innerHTML = "<dt>" + esc(t("everyday")) + "</dt><dd>" + (CONFIG.hours.always ? esc(t("h24")) : esc(CONFIG.hours.from + " – " + CONFIG.hours.to)) + "</dd>" +
+    "<dt>" + esc(t("deliveryLbl")) + "</dt><dd>" + esc(money(CONFIG.delivery.fee) + ", " + t("freeFrom", { n: money(CONFIG.delivery.freeFrom) })) + "</dd>";
+  $("copy").textContent = "© " + CONFIG.year + " " + CONFIG.name;
+  $("maker").textContent = CONFIG.maker.name; $("maker").href = CONFIG.maker.url;
+
+  $("rev-list").innerHTML = CONFIG.reviews.map(function (r) {
+    var s = ""; for (var i = 0; i < 5; i++) s += i < r.stars ? STAR : STAR.replace('fill="currentColor"', 'fill="currentColor" opacity=".25"');
+    return '<article class="rev"><span class="stars">' + s + '</span><p>' + esc(L(r.text)) + '</p><footer><b>' + esc(r.name) + '</b><span>' + esc(L(r.when)) + '</span></footer></article>';
+  }).join("");
+
+  document.querySelectorAll("#designs button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.design === state.design)); });
+  document.querySelectorAll("#langs button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)); });
+  document.documentElement.setAttribute("data-design", state.design);
+}
+
+function renderCats() {
+  var html = '<button type="button" id="cat-all" data-cat="all" aria-pressed="' + (state.cat === "all") + '">' + esc(t("all")) + "</button>";
+  CONFIG.menu.forEach(function (c) { html += '<button type="button" id="cat-' + c.id + '" data-cat="' + c.id + '" aria-pressed="' + (state.cat === c.id) + '">' + esc(L(c.title)) + "</button>"; });
+  $("cats").innerHTML = html;
+}
+
+function qtyHtml(id) {
+  var q = state.cart[id] || 0;
+  return '<div class="qty' + (q ? " has" : "") + '" data-id="' + id + '"><button type="button" class="minus" aria-label="' + esc(t("remove")) + '">−</button><span>' + q + '</span><button type="button" class="plus" aria-label="' + esc(t("add")) + '">+</button></div>';
+}
+
+function renderMenu() {
+  $("menu").innerHTML = CONFIG.menu.map(function (c) {
+    var hidden = state.cat !== "all" && state.cat !== c.id;
+    return '<section class="menu" data-cat="' + c.id + '"' + (hidden ? " hidden" : "") + '><div class="sec-head"><div><h2>' + esc(L(c.title)) + "</h2>" +
+      (L(c.note) ? '<p class="note">' + esc(L(c.note)) + "</p>" : "") + "</div>" + (ICONS[c.icon] || "") + "</div>" +
+      c.items.map(function (it) {
+        var tag = it.tag ? '<span class="tag' + (it.tag === "new" ? " new" : "") + '">' + esc(t(it.tag)) + "</span>" : "";
+        return '<div class="item"><div class="txt"><h3>' + esc(L(it.name)) + tag + "</h3><p>" + esc(L(it.desc)) + '</p><span class="price">' + money(it.price) + "</span></div>" + qtyHtml(it.id) + "</div>";
+      }).join("") + "</section>";
+  }).join("");
+}
+
+function cartTotals() {
+  var count = 0, sub = 0;
+  Object.keys(state.cart).forEach(function (id) { count += state.cart[id]; sub += state.cart[id] * ITEMS[id].price; });
+  var fee = state.mode === "delivery" && sub > 0 && sub < CONFIG.delivery.freeFrom ? CONFIG.delivery.fee : 0;
+  return { count: count, sub: sub, fee: fee, total: sub + fee };
+}
+
+function renderBar() {
+  var tt = cartTotals(), bar = $("bar");
+  if (tt.count) {
+    bar.className = "wrap cart";
+    bar.innerHTML = '<button type="button" class="btn primary cartbtn" id="open-cart"><span class="count">' + tt.count + "</span><span>" + esc(t("cart")) + "</span><span>" + money(tt.sub) + "</span></button>";
+  } else {
+    bar.className = "wrap";
+    bar.innerHTML = '<a class="btn primary" href="tel:' + CONFIG.phone + '">' + esc(t("call")) + '</a><a class="btn ghost" href="https://t.me/' + CONFIG.telegram + '" target="_blank" rel="noopener">Telegram</a>';
+  }
+}
+
+function renderSheet() {
+  var ids = Object.keys(state.cart);
+  $("lines").innerHTML = ids.map(function (id) {
+    var it = ITEMS[id];
+    return '<div class="line"><div class="nm">' + esc(L(it.name)) + "<small>" + money(it.price * state.cart[id]) + "</small></div>" + qtyHtml(id) + "</div>";
+  }).join("");
+  document.querySelectorAll("#mode button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)); });
+  $("addr-field").hidden = state.mode !== "delivery";
+  var tt = cartTotals();
+  $("sum").innerHTML = "<span>" + esc(t("product")) + " · " + tt.count + " " + esc(t("items")) + "</span><span>" + money(tt.sub) + "</span>" +
+    (state.mode === "delivery" ? "<span>" + esc(t("dfee")) + "</span><span>" + (tt.fee ? money(tt.fee) : esc(t("free"))) + "</span>" : "") +
+    '<span class="t">' + esc(t("total")) + '</span><span class="t">' + money(tt.total) + "</span>";
+}
+
+function renderAll() { renderStatic(); renderCats(); renderMenu(); renderBar(); if (!$("sheet").hidden) renderSheet(); }
+
+/* ================= Buyurtma matni ================= */
+function orderText() {
+  var tt = cartTotals(), lines = ["🧾 " + t("orderTitle") + " — " + CONFIG.name, ""];
+  Object.keys(state.cart).forEach(function (id) { lines.push(state.cart[id] + " × " + L(ITEMS[id].name) + " — " + money(ITEMS[id].price * state.cart[id])); });
+  lines.push("");
+  if (state.mode === "delivery") lines.push(t("dfee") + ": " + (tt.fee ? money(tt.fee) : t("free")));
+  lines.push(t("total") + ": " + money(tt.total), "");
+  var name = $("o-name").value.trim(), phone = $("o-phone").value.trim(), addr = $("o-addr").value.trim(), note = $("o-note").value.trim();
+  if (name) lines.push(t("nameLbl") + ": " + name);
+  lines.push(t("phoneLbl") + ": " + phone);
+  lines.push(state.mode === "delivery" ? t("addrLbl") + ": " + (addr || "—") : t("pickupMsg"));
+  if (note) lines.push(t("noteLbl").replace(/\s*\(.*\)/, "") + ": " + note);
+  return lines.join("\n");
+}
+
+var toastTimer;
+function toast(msg) { var el = $("toast"); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 1800); }
+
+function openSheet() { renderSheet(); $("sheet").hidden = false; $("scrim").hidden = false; $("close").focus(); }
+function closeSheet() { $("sheet").hidden = true; $("scrim").hidden = true; }
+
+/* ================= Hodisalar ================= */
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("button"); if (!b) return;
+  if (b.closest("#designs")) { state.design = b.dataset.design; persist(); renderStatic(); return; }
+  if (b.closest("#langs")) { state.lang = b.dataset.lang; persist(); renderAll(); return; }
+  if (b.closest("#cats")) {
+    state.cat = b.dataset.cat; renderCats();
+    document.querySelectorAll("section.menu").forEach(function (s) { s.hidden = state.cat !== "all" && s.dataset.cat !== state.cat; });
+    return;
+  }
+  if (b.closest("#mode")) { state.mode = b.dataset.mode; renderSheet(); return; }
+  var q = b.closest(".qty");
+  if (q) {
+    var id = q.dataset.id, n = (state.cart[id] || 0) + (b.classList.contains("plus") ? 1 : -1);
+    if (n > 0) state.cart[id] = n; else delete state.cart[id];
+    persist();
+    document.querySelectorAll('.qty[data-id="' + id + '"]').forEach(function (el) { el.outerHTML = qtyHtml(id); });
+    renderBar();
+    if (!$("sheet").hidden) { if (Object.keys(state.cart).length) renderSheet(); else closeSheet(); }
+    return;
+  }
+  if (b.id === "open-cart") { openSheet(); return; }
+  if (b.id === "close") { closeSheet(); return; }
+  if (b.id === "copy-btn") {
+    var txt = orderText();
+    var done = function () { toast(t("copied")); };
+    try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt); done(); }); } catch (err) { fallbackCopy(txt); done(); }
+  }
+});
+function fallbackCopy(txt) { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove(); }
+$("scrim").addEventListener("click", closeSheet);
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
+$("o-phone").addEventListener("input", function () { $("phone-err").hidden = true; });
+$("order").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var digits = $("o-phone").value.replace(/\D/g, "");
+  if (digits.length < 9) { $("phone-err").hidden = false; $("o-phone").focus(); return; }
+  var txt = orderText();
+  try { navigator.clipboard.writeText(txt).catch(function () {}); } catch (err) {}
+  var a = document.createElement("a");
+  a.href = "https://t.me/share/url?url=" + encodeURIComponent(txt);
+  a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* ================= Google uchun ma'lumot (Schema.org) ================= */
+(function () {
+  var ld = { "@context": "https://schema.org", "@type": "FastFoodRestaurant", name: CONFIG.name, telephone: CONFIG.phone,
+    address: { "@type": "PostalAddress", streetAddress: CONFIG.text.uz.address, addressLocality: "Chinobod", addressRegion: "Andijon", addressCountry: "UZ" },
+    hasMap: CONFIG.googleMaps, servesCuisine: "Fast food", priceRange: CONFIG.avgCheck + " 000 UZS",
+    openingHours: CONFIG.hours.always ? "Mo-Su 00:00-23:59" : "Mo-Su " + CONFIG.hours.from + "-" + CONFIG.hours.to,
+    aggregateRating: { "@type": "AggregateRating", ratingValue: CONFIG.rating, reviewCount: CONFIG.reviewsCount } };
+  var s = document.createElement("script"); s.type = "application/ld+json"; s.textContent = JSON.stringify(ld); document.head.appendChild(s);
+})();
+
+renderAll();
+setInterval(renderStatic, 60000);
+</script>
+</body>
+</html>
