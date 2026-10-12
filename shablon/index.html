@@ -179,7 +179,7 @@ h1 span{color:var(--hot)}
 .combo s{opacity:.7;font-variant-numeric:tabular-nums}
 .combo .save{background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:13px;border-radius:999px;padding:3px 10px}
 .combo .btn{background:var(--brand-ink);color:var(--brand)}
-@media (min-width:700px){.combo{grid-template-columns:auto 1fr auto;align-items:center;padding:24px 28px;gap:28px}.combo .stack img,.combo .stack .ph{width:104px;height:104px}}
+@media (min-width:700px){.combo{grid-template-columns:auto 1fr;align-items:center;padding:24px 28px;gap:12px 28px}.combo .buy{grid-column:2}.combo .stack img,.combo .stack .ph{width:104px;height:104px}}
 
 /* Category chips */
 nav.cats{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:var(--bw) solid var(--line);margin-top:40px}
@@ -258,6 +258,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
   border-top:var(--bw) solid var(--line);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))}
 .bar .wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px}
 .bar .wrap.cart{grid-template-columns:1fr}
+@media (min-width:900px){.bar:not(.has-cart){display:none}body{padding-bottom:96px}}
 .cartbtn{justify-content:space-between}
 .cartbtn .count{background:var(--brand-ink);color:var(--brand);border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;font-size:14px;font-weight:800;padding:0 8px}
 
@@ -603,7 +604,21 @@ var CONFIG = {
     { name: "Sardor", stars: 4, when: { uz: "1 oy oldin", ru: "месяц назад" }, text: { uz: "Burgerlar yaxshi, kartoshka fri biroz sovib qoldi. Narxlar arzon.", ru: "Бургеры хорошие, фри немного остыла. Цены низкие." } }
   ],
   // Rasm mualliflari (CC BY litsenziyasi talabi). O'z rasmlaringizni qo'ysangiz, bu ro'yxatni bo'shating: []
-  photoCredits: []
+  photoCredits: [
+    { slot: "hero", what: { uz: "Bosh rasm", ru: "Главное фото" }, author: "jeffreyw", url: "https://www.flickr.com/photos/jeffreyww/4921509381", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "l1", author: "rick", url: "https://www.flickr.com/photos/spine/2447350967", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "l2", author: "Varin", url: "https://www.flickr.com/photos/varintsai/4193058369", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "l3", author: "Jon Åslund", url: "https://www.flickr.com/photos/jooon/2253461209", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "l4", author: "T.Tseng", url: "https://www.flickr.com/photos/68147320@N02/15228567861", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "b1", author: "L.A. Foodie", url: "https://www.flickr.com/photos/lafoodie/14060046578", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "b2", author: "Alex", url: "https://www.flickr.com/photos/ajcreencia/5295360346", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "b3", author: "L.A. Foodie", url: "https://www.flickr.com/photos/lafoodie/18998722624", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "s1", author: "Ari Helminen", url: "https://www.flickr.com/photos/picsoflife/8207105839", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "s2", author: "Ben Sutherland", url: "https://www.flickr.com/photos/bensutherland/6152369905", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "d1", author: "wanda_szeged", url: "https://www.flickr.com/photos/96985480@N04/10387004166", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "d2", author: "tomislav medak", url: "https://www.flickr.com/photos/tomislavmedak/4986050208", license: "https://creativecommons.org/licenses/by/2.0/" },
+    { slot: "d3", author: "Kanko*", url: "https://www.flickr.com/photos/kankan/13062284", license: "https://creativecommons.org/licenses/by/2.0/" }
+  ]
 };
 
 /* ================= Tarjimalar ================= */
@@ -675,7 +690,7 @@ function photoHtml(it, opts) {
   opts = opts || {};
   var tag = opts.tag && it.tag ? '<span class="tag' + (it.tag === "new" ? " new" : "") + '">' + esc(t(it.tag)) + "</span>" : "";
   var inner = it.photo
-    ? '<img src="' + esc(it.photo) + '" alt="' + esc(L(it.name)) + '" loading="lazy" decoding="async" width="640" height="640">'
+    ? '<img src="' + esc(it.photo) + '" alt="' + esc(L(it.name)) + '" width="640" height="640">'
     : (ICONS[(CAT_OF[it.id] || {}).icon] || "");
   var tagName = opts.static ? "div" : "button";
   var attrs = opts.static ? "" : ' type="button" data-open="' + it.id + '" aria-label="' + esc(L(it.name)) + '"';
@@ -750,7 +765,7 @@ function renderStatic() {
   var cr = CONFIG.photoCredits || [];
   $("credits-box").hidden = !cr.length;
   $("credits").innerHTML = cr.map(function (c) {
-    return "<li>" + esc(L(ITEMS[c.slot] ? ITEMS[c.slot].name : { uz: c.what || c.slot })) + ": " + t("photoBy") + ' <a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.author) + '</a>, <a href="' + esc(c.license) + '" target="_blank" rel="noopener">CC BY 2.0</a></li>';
+    return "<li>" + esc(ITEMS[c.slot] ? L(ITEMS[c.slot].name) : (L(c.what) || c.slot)) + ": " + t("photoBy") + ' <a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.author) + '</a>, <a href="' + esc(c.license) + '" target="_blank" rel="noopener">CC BY 2.0</a></li>';
   }).join("");
 
   document.querySelectorAll("#designs button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.design === state.design)); });
@@ -802,6 +817,7 @@ function cartTotals() {
 
 function renderBar() {
   var tt = cartTotals(), bar = $("bar");
+  bar.parentNode.classList.toggle("has-cart", tt.count > 0);
   if (tt.count) {
     bar.className = "wrap cart";
     bar.innerHTML = '<button type="button" class="btn primary cartbtn" id="open-cart"><span class="count">' + tt.count + "</span><span>" + esc(t("cart")) + "</span><span>" + money(tt.sub) + "</span></button>";
