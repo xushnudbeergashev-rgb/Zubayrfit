@@ -417,32 +417,51 @@ function usernameWarning(formName, profileName) {
 // Foydalanuvchi yuborgan rasm/videolarni Telegram'ga yuklab, file_id'larini saqlaydi.
 // Yuklash uchun joy kerak: STORAGE_CHAT (ixtiyoriy, maxfiy guruh/kanal ID) yoki birinchi admin chati —
 // admin chatiga ovozsiz yuklanadi va darhol o'chiriladi (chat toza qoladi, e'lonlar «Navbat»da ko'rinadi).
+function storedOf(m) {
+  if (m.video) return { type: "video", file_id: m.video.file_id, thumb: m.video.thumbnail?.file_id || null };
+  if (m.photo) return { type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id };
+  throw new Error("BAD_VIDEO");
+}
 async function storeMedia(env, l, files) {
   const targets = env.STORAGE_CHAT ? [env.STORAGE_CHAT] : adminIds(env);
+  if (!targets.length) throw new Error("ADMIN_IDS bo'sh — rasmlarni yuklaydigan chat yo'q");
+  const errors = [];
   for (const chat of targets) {
+    let msgs;
     try {
+      // 1-usul: hammasi bitta albom bo'lib
       const fd = new FormData();
       fd.append("chat_id", String(chat));
       fd.append("disable_notification", "true");
       fd.append("media", JSON.stringify(mediaItems(files.map((f, i) => ({ type: f.type, media: `attach://f${i}` })), "")));
       files.forEach((f, i) => fd.append(`f${i}`, f.file, f.name));
-      const msgs = await tg(env, "sendMediaGroup", fd);
-      const stored = msgs.map((m) => {
-        if (m.video) return { type: "video", file_id: m.video.file_id, thumb: m.video.thumbnail?.file_id || null };
-        if (m.photo) return { type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id };
-        throw new Error("BAD_VIDEO");
-      });
-      if (!env.STORAGE_CHAT) {
-        for (const m of msgs) await tgSafe(env, "deleteMessage", { chat_id: chat, message_id: m.message_id });
-      }
-      await updateListing(env, l.id, { media: JSON.stringify(stored) });
-      return;
+      msgs = await tg(env, "sendMediaGroup", fd);
     } catch (e) {
-      if (e.message === "BAD_VIDEO") throw e;
-      console.log(`Rasm ${chat} ga yuklanmadi: ${e.message}`);
+      errors.push(`${chat}: ${e.message}`);
+      // 2-usul: har bir fayl alohida (albom rad etilsa ham ishlaydi)
+      try {
+        msgs = [];
+        for (const f of files) {
+          const fd = new FormData();
+          fd.append("chat_id", String(chat));
+          fd.append("disable_notification", "true");
+          fd.append(f.type, f.file, f.name);
+          msgs.push(await tg(env, f.type === "video" ? "sendVideo" : "sendPhoto", fd));
+        }
+      } catch (e2) {
+        errors.push(`${chat} (alohida): ${e2.message}`);
+        for (const m of msgs) await tgSafe(env, "deleteMessage", { chat_id: chat, message_id: m.message_id });
+        continue;
+      }
     }
+    const stored = msgs.map(storedOf); // video mos kelmasa — BAD_VIDEO
+    if (!env.STORAGE_CHAT) {
+      for (const m of msgs) await tgSafe(env, "deleteMessage", { chat_id: chat, message_id: m.message_id });
+    }
+    await updateListing(env, l.id, { media: JSON.stringify(stored) });
+    return;
   }
-  throw new Error("Rasmlarni yuklab bo'lmadi");
+  throw new Error(errors.join("; ").slice(0, 400));
 }
 
 // ---------------------------------------------------------------- Navbat: adminlarga bitta yig'ma xabar
@@ -1494,14 +1513,22 @@ async function apiSubmit(env, request) {
   try {
     await storeMedia(env, await getListing(env, id), files);
   } catch (e) {
-    console.log("Adminlarga yuborilmadi:", e.message);
+    console.log("Rasmlar yuklanmadi:", e.message);
     await env.DB.prepare("DELETE FROM listings WHERE id=?").bind(id).run();
     if (e.message === "BAD_VIDEO") return err("Video formati mos kelmadi. MP4 video yoki rasm yuboring.");
-    return err("Server xatosi. Birozdan keyin qayta urinib ko'ring.", 500);
+    // Adminga aniq sabab ko'rsatiladi (masalan, «chat not found» — admin botga /start bosmagan)
+    return err("Rasmlarni yuklab bo'lmadi. Birozdan keyin qayta urinib ko'ring." +
+      (isAdmin(env, user.id) ? `\n\nSabab (faqat adminga ko'rinadi): ${e.message}` : ""), 500);
   }
-  const origin = new URL(request.url).origin;
-  if ((await getSetting(env, "app_url")) !== origin) await setSetting(env, "app_url", origin);
-  await refreshQueueNotice(env, { notify: true });
+  // E'lon saqlandi. Bundan keyingi qadamlar xato bersa ham foydalanuvchiga «yuborildi» deyiladi —
+  // aks holda u qayta yuborib, dublikat e'lon paydo bo'lardi.
+  try {
+    const origin = new URL(request.url).origin;
+    if ((await getSetting(env, "app_url")) !== origin) await setSetting(env, "app_url", origin);
+    await refreshQueueNotice(env, { notify: true });
+  } catch (e) {
+    console.log("Navbat xabari yuborilmadi:", e.stack || e.message);
+  }
   const note = kind === "hadya" ? "" : ` Ma'qullansa, ${fmtSum(await getPrice(env))} to'lov qilasiz.`;
   await tgSafe(env, "sendMessage", { chat_id: user.id, text: `📨 ${KIND_NAMES[kind]} e'loningiz (#${id}) adminga yuborildi.${note}` });
   return json({ ok: true, id });
@@ -2127,9 +2154,11 @@ export default {
       }
       return new Response("Topilmadi", { status: 404 });
     } catch (e) {
-      console.log("Xato:", e.stack || e.message);
+      console.log("Xato:", path, e.stack || e.message);
       if (String(e.message).includes("no such table")) return err("Bot hali sozlanmagan: /setup?key=... sahifasini oching.", 503);
-      return err("Server xatosi. Birozdan keyin qayta urinib ko'ring.", 500);
+      const who = await authUser(env, request.headers.get("x-init-data")).catch(() => null);
+      return err("Server xatosi. Birozdan keyin qayta urinib ko'ring." +
+        (who && isAdmin(env, who.id) ? `\n\nSabab (faqat adminga ko'rinadi): ${String(e.message).slice(0, 300)}` : ""), 500);
     }
   },
 

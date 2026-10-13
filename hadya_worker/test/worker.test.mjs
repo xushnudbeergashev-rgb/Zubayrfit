@@ -39,6 +39,7 @@ let downloads = 0; // Telegram'dan fayl yuklab olishlar soni
 let msgId = 1000;
 // chat_id → { code, description }: shu foydalanuvchiga sendMessage xato qaytaradi
 const failSend = new Map();
+let failGroup = false, failPhoto = false; // sendMediaGroup / sendPhoto xatosini taqlid qilish
 const lastCall = (method) => [...calls].reverse().find((c) => c.method === method);
 const callsOf = (method) => calls.filter((c) => c.method === method);
 globalThis.fetch = async (url, opts = {}) => {
@@ -52,6 +53,12 @@ globalThis.fetch = async (url, opts = {}) => {
   } else if (opts.body) body = JSON.parse(opts.body);
   calls.push({ method, body });
   const ok = (result) => new Response(JSON.stringify({ ok: true, result }));
+  if ((failGroup && method === "sendMediaGroup") || (failPhoto && method === "sendPhoto")) {
+    return new Response(JSON.stringify({ ok: false, error_code: 400, description: "Bad Request: chat not found" }), { status: 400 });
+  }
+  if (method === "sendPhoto" || method === "sendVideo") {
+    return new Response(JSON.stringify({ ok: true, result: { message_id: ++msgId, chat: { id: body.chat_id }, photo: [{ file_id: "s" + msgId }, { file_id: "b" + msgId }] } }));
+  }
   const fail = method === "sendMessage" && failSend.get(Number(body.chat_id));
   if (fail) return new Response(JSON.stringify({ ok: false, error_code: fail.code, description: fail.description }), { status: fail.code });
   switch (method) {
@@ -673,4 +680,29 @@ test("Navbat: rad etish (sabab bilan), to'lov chekini ko'rish va tasdiqlash", as
   j = await reqJson(`/api/admin/queue/${id}`, { method: "POST", user: ADMU, body: { action: "pay_ok" } });
   assert.equal(j.ok, true, j.error);
   assert.equal(row(id).status, "published");
+});
+
+// ---------------------------------------------------------------- 5-bosqich: e'lon yuborishdagi xatolarga chidamlilik
+test("albom rad etilsa, rasm alohida yuklanadi; navbat xabari xato bersa ham e'lon yuboriladi", async () => {
+  const U = { id: 911, first_name: "Sardor" };
+  failGroup = true; // sendMediaGroup xato qaytaradi
+  failSend.set(ADMIN, { code: 400, description: "Bad Request: test" }); // yig'ma xabar ham yuborilmaydi
+  const j = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: U, phone: "+998901234567" }) });
+  failGroup = false;
+  failSend.delete(ADMIN);
+  assert.equal(j.ok, true, j.error);
+  const media = JSON.parse(row(j.id).media);
+  assert.equal(media.length, 1);
+  assert.equal(lastCall("sendPhoto").body.chat_id, String(ADMIN));
+});
+
+test("rasm umuman yuklanmasa: e'lon saqlanmaydi, adminga aniq sabab ko'rsatiladi", async () => {
+  failGroup = true; failPhoto = true;
+  const user = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: { id: 912, first_name: "Oddiy" }, phone: "+998901234567" }) });
+  const admin = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: { id: ADMIN, first_name: "Admin" }, phone: "+998901234567" }) });
+  failGroup = failPhoto = false;
+  assert.match(user.error, /Rasmlarni yuklab bo'lmadi/);
+  assert.doesNotMatch(user.error, /Sabab/);
+  assert.match(admin.error, /Sabab \(faqat adminga ko'rinadi\): .*chat not found/);
+  assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM listings WHERE user_id IN (912, ?) AND status='pending'").get(ADMIN).n, 0);
 });
