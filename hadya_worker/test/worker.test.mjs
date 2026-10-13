@@ -706,3 +706,25 @@ test("rasm umuman yuklanmasa: e'lon saqlanmaydi, adminga aniq sabab ko'rsatiladi
   assert.match(admin.error, /Sabab \(faqat adminga ko'rinadi\): .*chat not found/);
   assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM listings WHERE user_id IN (912, ?) AND status='pending'").get(ADMIN).n, 0);
 });
+
+test("STORAGE_CHAT havola bo'lsa: e'tiborsiz qoldiriladi, rasm admin chatiga yuklanadi; /chatid ID'ni aytadi", async () => {
+  env.STORAGE_CHAT = "https://t.me/+IQC1ywD9tro4YTcy";
+  const j = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: { id: 921, first_name: "Nilufar" }, phone: "+998901234567" }) });
+  assert.equal(j.ok, true, j.error);
+  assert.equal(lastCall("sendMediaGroup").body.chat_id, String(ADMIN));
+  // to'g'ri ID — o'sha yerga yuklanadi va o'chirilmaydi
+  env.STORAGE_CHAT = "-1009999";
+  const del = callsOf("deleteMessage").length;
+  const j2 = await reqJson("/api/submit", { method: "POST", body: hadyaForm({ __user: { id: 922, first_name: "Aziz" }, phone: "+998901234567" }) });
+  assert.equal(j2.ok, true, j2.error);
+  assert.equal(lastCall("sendMediaGroup").body.chat_id, "-1009999");
+  assert.equal(callsOf("deleteMessage").filter((c) => c.body.chat_id === "-1009999").length, 0);
+  void del;
+  delete env.STORAGE_CHAT;
+  // /chatid: guruhda admin yozsa javob, oddiy odam yozsa jim
+  const grp = { id: -100555, type: "supergroup", title: "Rasmlar" };
+  await tgUpdate({ message: { message_id: 3, from: { id: 999001, first_name: "X" }, chat: grp, text: "/chatid" } });
+  assert.notEqual(lastCall("sendMessage").body.chat_id, -100555);
+  await tgUpdate({ message: { message_id: 4, from: { id: ADMIN, first_name: "Admin" }, chat: grp, text: "/chatid@hadyaga_mushuk_bot" } });
+  assert.match(lastCall("sendMessage").body.text, /-100555/);
+});

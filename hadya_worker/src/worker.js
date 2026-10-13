@@ -422,8 +422,18 @@ function storedOf(m) {
   if (m.photo) return { type: "photo", file_id: m.photo.at(-1).file_id, thumb: m.photo[Math.min(1, m.photo.length - 1)].file_id };
   throw new Error("BAD_VIDEO");
 }
+// STORAGE_CHAT: raqamli ID (-100...) yoki @username bo'lishi kerak. Taklif havolasi (t.me/+...) ishlamaydi —
+// bunday qiymat e'tiborsiz qoldiriladi va rasmlar admin chatiga yuklanadi.
+function storageChat(env) {
+  const v = String(env.STORAGE_CHAT || "").trim();
+  if (!v) return null;
+  return /^-?\d+$/.test(v) || /^@[A-Za-z]\w{4,}$/.test(v) ? v : null;
+}
 async function storeMedia(env, l, files) {
-  const targets = env.STORAGE_CHAT ? [env.STORAGE_CHAT] : adminIds(env);
+  const storage = storageChat(env);
+  if (env.STORAGE_CHAT && !storage) console.log(`STORAGE_CHAT noto'g'ri (${env.STORAGE_CHAT}) — admin chati ishlatiladi`);
+  // saqlash chati ishlamasa ham, admin chatlari zaxira bo'lib turadi
+  const targets = [...(storage ? [storage] : []), ...adminIds(env)];
   if (!targets.length) throw new Error("ADMIN_IDS bo'sh — rasmlarni yuklaydigan chat yo'q");
   const errors = [];
   for (const chat of targets) {
@@ -455,7 +465,7 @@ async function storeMedia(env, l, files) {
       }
     }
     const stored = msgs.map(storedOf); // video mos kelmasa — BAD_VIDEO
-    if (!env.STORAGE_CHAT) {
+    if (String(chat) !== storage) {
       for (const m of msgs) await tgSafe(env, "deleteMessage", { chat_id: chat, message_id: m.message_id });
     }
     await updateListing(env, l.id, { media: JSON.stringify(stored) });
@@ -936,6 +946,7 @@ async function getDoneMode(env, adminId) {
 // #hadyaga, #sotiladi yoki #reklama hashtagi bo'lishi shart. Oddiy xabarlar («Assalomu alaykum...»,
 // e'lonlar, reklama bo'lmagan postlar) e'tiborsiz qoldiriladi.
 async function onChannelPost(env, m) {
+  if (/^\/chatid(@\w+)?$/i.test((m.text || "").trim())) return replyChatId(env, m.chat, m.message_id);
   const ch = String(env.CHANNEL || "").replace(/^@/, "").toLowerCase();
   if ((m.chat.username || "").toLowerCase() !== ch && String(m.chat.id) !== String(env.CHANNEL)) return;
   if (m.media_group_id && !m.caption) return attachAlbumItem(env, m);
@@ -945,8 +956,22 @@ async function onChannelPost(env, m) {
 }
 
 // ---------------------------------------------------------------- bot: xabarlar
+// Guruh yoki kanal ID'sini bilish (STORAGE_CHAT uchun): botni o'sha joyga qo'shib, /chatid yozing
+async function replyChatId(env, chat, replyTo) {
+  return tgSafe(env, "sendMessage", {
+    chat_id: chat.id, reply_parameters: replyTo ? { message_id: replyTo, allow_sending_without_reply: true } : undefined,
+    parse_mode: "HTML",
+    text: `🆔 Bu chat ID'si: <code>${chat.id}</code>\n\nCloudflare'da STORAGE_CHAT qiymatiga shu raqamni (minus belgisi bilan) yozing.`,
+  });
+}
+
 async function onMessage(env, origin, m) {
-  if (m.chat.type !== "private" || !m.from) return;
+  if (m.chat.type !== "private") {
+    // guruhda faqat adminning /chatid buyrug'iga javob beriladi
+    if (m.from && isAdmin(env, m.from.id) && /^\/chatid(@\w+)?$/i.test((m.text || "").trim())) await replyChatId(env, m.chat, m.message_id);
+    return;
+  }
+  if (!m.from) return;
   const u = m.from;
   await upsertUser(env, u);
   const text = m.text || "";
@@ -1905,6 +1930,16 @@ async function setup(env, origin) {
       ok(`Admin ${id}: xabar yetib bordi, admin buyruqlari menyusi o'rnatildi`);
     }
     else bad(`Admin ${id}: xabar yetmadi. Bu admin botga /start bosishi kerak, keyin sahifani yangilang.`);
+  }
+  if (env.STORAGE_CHAT) {
+    const st = storageChat(env);
+    if (!st) bad(`STORAGE_CHAT noto'g'ri: «${env.STORAGE_CHAT}». Havola emas, raqamli ID kerak (masalan -1001234567890). ` +
+      "Botni o'sha guruhga qo'shing va u yerda /chatid deb yozing — bot ID'ni aytadi. Hozircha rasmlar admin chatiga yuklanadi.");
+    else {
+      const r = await tgSafe(env, "getChat", { chat_id: st });
+      if (r) ok(`Rasmlar saqlanadigan chat: ${r.title || st}`);
+      else bad(`STORAGE_CHAT (${st}) topilmadi: botni o'sha guruh/kanalga qo'shing (kanal bo'lsa — admin qilib). Hozircha rasmlar admin chatiga yuklanadi.`);
+    }
   }
   if (env.OPENAI_API_KEY) ok(`AI yordamchi ulangan (model: ${env.OPENAI_MODEL || "gpt-4o-mini"})`);
   else warn("AI yordamchi o'chiq: Variables and Secrets'ga OPENAI_API_KEY (Secret) qo'shing.");

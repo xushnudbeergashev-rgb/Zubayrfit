@@ -107,4 +107,4 @@ Botda har bir adminda **bitta** yig'ma xabar turadi: "📥 Tekshiruvni kutmoqda:
 
 **Tinch soatlar** (standart 23:00–08:00, Toshkent vaqti) Admin panel → Bildirishnomalar bo'limida o'zgartiriladi yoki o'chiriladi. Bu vaqtda xabar ovozsiz keladi. Tinch soatlar tugagach, navbatda so'rov qolgan bo'lsa, ovozli eslatma beriladi.
 
-Foydalanuvchi yuborgan rasmlar Telegram'ga yuklanishi uchun birinchi admin chatiga ovozsiz yuklanib, darhol o'chiriladi. Xohlasangiz, buning o'rniga maxfiy guruh yoki kanal ID'sini `STORAGE_CHAT` (Text) o'zgaruvchisiga yozing: rasmlar o'sha yerga yuklanadi va o'chirilmaydi. Bot o'sha chatda xabar yubora olishi kerak.
+Foydalanuvchi yuborgan rasmlar Telegram'ga yuklanishi uchun birinchi admin chatiga ovozsiz yuklanib, darhol o'chiriladi. Xohlasangiz, buning o'rniga maxfiy guruh yoki kanalning **raqamli ID'sini** (masalan `-1001234567890`, taklif havolasi emas) `STORAGE_CHAT` (Text) o'zgaruvchisiga yozing. Rasmlar o'sha yerga yuklanadi va o'chirilmaydi. ID'ni bilish uchun botni o'sha guruhga qo'shib, `/chatid` deb yozing. Qiymat noto'g'ri bo'lsa, rasmlar admin chatiga yuklanaveradi.
