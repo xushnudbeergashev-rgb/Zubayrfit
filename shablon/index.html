@@ -361,6 +361,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 .pd .stepper button{width:38px;height:38px;border-radius:50%;border:0;background:var(--surface2);cursor:pointer;font-size:22px;font-weight:700}
 .pd .stepper span{min-width:26px;text-align:center;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
 #pd-add{font-size:15px;padding-inline:12px}
+.pd #pd-price{color:var(--ink);font-size:22px;font-family:var(--display)}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;
   background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;white-space:nowrap}
 
@@ -514,7 +515,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
 <main class="wrap">
   <div id="menu"></div>
 
-  <section class="sec" aria-labelledby="how-h">
+  <section class="sec" id="how-sec" aria-labelledby="how-h">
     <div class="sec-head"><div><p class="eyebrow" data-i18n="howEyebrow"></p><h2 id="how-h" data-i18n="how"></h2></div></div>
     <ol class="steps" id="steps"></ol>
   </section>
@@ -588,7 +589,8 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
     <div class="ph big" id="pd-ph"></div>
     <h2 id="pd-h"></h2>
     <p id="pd-desc"></p>
-    <div class="buyrow">
+    <p class="price" id="pd-price" hidden></p>
+    <div class="buyrow" id="pd-buy">
       <div class="stepper"><button type="button" id="pd-minus">−</button><span id="pd-n">1</span><button type="button" id="pd-plus">+</button></div>
       <button type="button" class="btn primary" id="pd-add"></button>
     </div>
@@ -650,6 +652,7 @@ footer.site ul{margin:8px 0 0;padding-left:18px;display:grid;gap:2px}
    Taom tugagan bo'lsa: available: false
    ================================================================ */
 var CONFIG = {
+  ordering: false,                 // false: faqat menyu (savatcha yo'q) · true: savatcha va Telegram orqali buyurtma
   name: "Doda Lavash",
   nameAccent: "Lavash",            // sarlavhada rangli bo'lib chiqadigan qism
   logo: "DL",
@@ -683,11 +686,11 @@ var CONFIG = {
   year: 2026,
   text: {
     uz: { eyebrow: "Chinobod · kechayu kunduz",
-          tagline: "Tandirda yopilgan non, issiq go'sht va sovuq ichimlik. Telegram orqali buyurtma bering, {time} daqiqada yetkazamiz.",
+          tagline: "Tandirda yopilgan non, issiq go'sht va sovuq ichimlik. Qo'ng'iroq qiling yoki Telegram'ga yozing, {time} daqiqada yetkazamiz.",
           address: "Chinobod, Andijon viloyati. Asosiy yo'l bo'yida, «Diydor» kafesi yonida.",
           landmark: "«Hamkorbank» Chinobod filiali", sticker: "Tandirdan<small>yangi non</small>" },
     ru: { eyebrow: "Чинабад · круглосуточно",
-          tagline: "Лаваш из тандыра, горячее мясо и холодные напитки. Закажите в Telegram — привезём за {time} минут.",
+          tagline: "Лаваш из тандыра, горячее мясо и холодные напитки. Звоните или пишите в Telegram — привезём за {time} минут.",
           address: "Чинабад, Андижанская область. У главной дороги, рядом с кафе «Дийдор».",
           landmark: "Чинабадский филиал «Хамкорбанка»", sticker: "Прямо<small>из тандыра</small>" }
   },
@@ -810,6 +813,7 @@ var ICONS = {
 };
 var STAR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>';
 var DESIGNS = ["yashil", "olov", "rishton"];
+var ORDERING = CONFIG.ordering !== false;
 
 /* ================= Yordamchilar ================= */
 var $ = function (id) { return document.getElementById(id); };
@@ -870,6 +874,7 @@ function restore() {
 }
 function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify({ cart: state.cart, lang: state.lang, design: $("designs") ? state.design : undefined })); } catch (e) {} }
 restore();
+if (!ORDERING) state.cart = {};
 if (DESIGNS.indexOf(state.design) < 0) state.design = "yashil";
 
 function photoHtml(it, opts) {
@@ -909,6 +914,7 @@ function renderStatus() {
 function zoneById(id) { return ZONES.filter(function (z) { return z.id === id; })[0] || ZONES[0]; }
 
 function renderStatic() {
+  $("how-sec").hidden = !ORDERING;
   var root = document.documentElement;
   root.lang = state.lang;
   root.setAttribute("data-design", state.design);
@@ -998,6 +1004,7 @@ function renderStatic() {
 function qtyHtml(id) {
   var q = state.cart[id] || 0, nm = L(ITEMS[id].name);
   if (!isOn(id)) return '<span class="tag off">' + esc(t("soldOut")) + "</span>";
+  if (!ORDERING) return "";
   return '<div class="qty' + (q ? " has" : "") + '" data-id="' + id + '"><button type="button" class="minus" aria-label="' + esc(t("remove") + ": " + nm) + '">−</button><span>' + q + '</span><button type="button" class="plus" aria-label="' + esc(t("add") + ": " + nm) + '">+</button></div>';
 }
 
@@ -1095,6 +1102,8 @@ function renderSheet() {
 
 function renderPd() {
   var it = ITEMS[state.pd]; if (!it) return;
+  $("pd-buy").hidden = !ORDERING; $("pd-price").hidden = ORDERING;
+  $("pd-price").textContent = money(it.price) + (it.available === false ? " · " + t("soldOut") : "");
   var cat = CAT_OF[it.id];
   $("pd-cat").textContent = cat ? L(cat.title) : t("comboEyebrow");
   $("pd-ph").outerHTML = photoHtml(it, { static: true, tag: true, cls: "big", id: "pd-ph" });

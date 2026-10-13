@@ -3,6 +3,11 @@
 `index.html` — saytning o'zi, `rasmlar/` — taom rasmlari, `og.jpg` — havola
 Telegram'da tashlanganda chiqadigan rasm. Server yoki dasturlash kerak emas.
 
+## Ikki rejim
+
+- `ordering: false` (hozirgi holat): faqat menyu — narxlar, rasmlar, ish vaqti, manzil, "Qo'ng'iroq" va "Marshrut". Google Maps uchun shu yetarli.
+- `ordering: true`: savatcha, yetkazish hududlari, to'lov turi va Telegram orqali buyurtma qo'shiladi.
+
 ## Yangi mijoz uchun sayt tayyorlash (20–30 daqiqa)
 
 1. `shablon` papkasini nusxalang.
