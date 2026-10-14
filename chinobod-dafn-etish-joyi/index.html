@@ -279,6 +279,17 @@
       gap: 10px;
     }
     .gallery figure { margin: 0; }
+    .gallery figure[hidden] { display: none; }
+    .gallery video,
+    .gallery iframe {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border: 0;
+      border-radius: 10px;
+      background: #000;
+      display: block;
+    }
     .gallery img {
       width: 100%;
       aspect-ratio: 4 / 3;
@@ -288,6 +299,37 @@
       background: var(--line);
     }
     .gallery figcaption { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+    .chips button {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .chips button.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+    /* Obodonlashtirish */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .feature {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .05);
+    }
+    .feature .icon { font-size: 30px; line-height: 1; }
+    .feature h3 { margin: 10px 0 4px; font-size: 17px; color: var(--green); }
+    .feature p { margin: 0; color: var(--muted); font-size: 15px; }
 
     .lightbox {
       position: fixed;
@@ -412,6 +454,7 @@
     <div class="nav-inner">
       <a class="brand" href="#">Chinobod</a>
       <a class="link" href="#tarix">Tarixi</a>
+      <a class="link" href="#obod">Obodonlashtirish</a>
       <a class="link" href="#odob">Ziyorat odobi</a>
       <a class="link" href="#galereya">Rasmlar</a>
       <a class="link" href="#joylashuv">Joylashuv</a>
@@ -461,8 +504,23 @@
       <ol class="timeline">
         <li><b>Tashkil topishi</b> Ma'lumot to'planmoqda</li>
         <li><b>Devor bilan o'ralishi</b> Ma'lumot to'planmoqda</li>
-        <li><b>Bugun</b> Asosiy xiyobon bo'ylab archalar ekilgan, yo'l chetida o'rindiqlar va chiroqlar o'rnatilgan. Hudud teraklar bilan o'ralgan</li>
+        <li><b>Bugun</b> Qo'ldan kelgancha obod qilingan: xiyobonlar, archalar, gulzor, uzumzor, oqar suv va duo qilish joyi bor</li>
       </ol>
+    </section>
+
+    <section id="obod">
+      <h2>Obodonlashtirish</h2>
+      <p class="lead">Qabriston qo'ldan kelgancha obod qilingan. Ziyoratga kelgan kishi bu yerda sokinlik va tartibni ko'radi.</p>
+      <div class="features">
+        <div class="feature"><div class="icon">💧</div><h3>Oqar suv</h3><p>Hudud bo'ylab oqib turgan ariq suvlari</p></div>
+        <div class="feature"><div class="icon">🍇</div><h3>Uzumzor</h3><p>Soya beruvchi uzum bog'lari</p></div>
+        <div class="feature"><div class="icon">🌳</div><h3>O'rik daraxtlari</h3><p>Bahorda gullaydigan, yozda meva beradigan o'riklar</p></div>
+        <div class="feature"><div class="icon">🌷</div><h3>Gulzor va lolaqizg'aldoqlar</h3><p>Gulxona hamda bahorda ochiladigan lolaqizg'aldoqlar</p></div>
+        <div class="feature"><div class="icon">🌲</div><h3>Archali xiyobonlar</h3><p>Ikki chetiga archalar ekilgan toza yo'laklar</p></div>
+        <div class="feature"><div class="icon">🪑</div><h3>So'rilar va o'rindiqlar</h3><p>Ziyoratchilar dam olib, o'tirishi uchun joylar</p></div>
+        <div class="feature"><div class="icon">🤲</div><h3>Duo qilish joyi</h3><p>Qabriston o'rtasida yomg'ir va qordan pana beradigan kichik shiypon</p></div>
+        <div class="feature"><div class="icon">📋</div><h3>Eslatma taxtalari</h3><p>Ziyoratchilar uchun eslatmalar yozilgan temir taxtalar</p></div>
+      </div>
     </section>
 
     <section id="odob">
@@ -482,13 +540,25 @@
     </section>
 
     <section id="galereya">
-      <h2>Rasmlar</h2>
-      <!-- Yangi rasm qo'shish: rasmni rasmlar/ papkasiga qo'ying va shu yerga yana bitta <figure> qatorini nusxalang -->
+      <h2>Fasllar galereyasi</h2>
+      <div class="chips" role="tablist" aria-label="Fasl bo'yicha saralash">
+        <button type="button" class="active" data-filter="all">Barchasi</button>
+        <button type="button" data-filter="bahor">🌷 Bahor</button>
+        <button type="button" data-filter="yoz">☀️ Yoz</button>
+        <button type="button" data-filter="kuz">🍂 Kuz</button>
+        <button type="button" data-filter="qish">❄️ Qish</button>
+      </div>
+      <!--
+        Yangi rasm:   <figure data-season="bahor"><img src="rasmlar/NOMI.jpg" alt="..." loading="lazy"><figcaption>...</figcaption></figure>
+        Yangi video:  <figure data-season="bahor"><video src="videolar/NOMI.mp4" controls muted playsinline preload="metadata"></video><figcaption>...</figcaption></figure>
+        YouTube:      <figure data-season="bahor"><iframe src="https://www.youtube.com/embed/VIDEO_ID" title="..." loading="lazy" allowfullscreen></iframe><figcaption>...</figcaption></figure>
+        data-season: bahor | yoz | kuz | qish
+      -->
       <div class="gallery">
-        <figure><img src="rasmlar/asosiy.jpg" alt="Qor bosgan asosiy xiyobon, ikki chetida archalar" loading="lazy"><figcaption>Asosiy xiyobon, qish</figcaption></figure>
-        <figure><img src="rasmlar/archalar-qishda.jpg" alt="Xiyobon bo'yidagi qor bosgan archalar" loading="lazy"><figcaption>Xiyobon bo'yidagi archalar</figcaption></figure>
-        <figure><img src="rasmlar/yozgi-osmon.jpg" alt="Yozda bulutli osmon ostidagi qabriston" loading="lazy"><figcaption>Yoz, bulutli kun</figcaption></figure>
-        <figure><img src="rasmlar/yozgi-daraxtlar.jpg" alt="Teraklar bilan o'ralgan qabriston, yoz" loading="lazy"><figcaption>Terakzor bilan o'ralgan</figcaption></figure>
+        <figure data-season="qish"><img src="rasmlar/asosiy.jpg" alt="Qor bosgan asosiy xiyobon, ikki chetida archalar" loading="lazy"><figcaption>Asosiy xiyobon, qish</figcaption></figure>
+        <figure data-season="qish"><img src="rasmlar/archalar-qishda.jpg" alt="Xiyobon bo'yidagi qor bosgan archalar" loading="lazy"><figcaption>Xiyobon bo'yidagi archalar</figcaption></figure>
+        <figure data-season="yoz"><img src="rasmlar/yozgi-osmon.jpg" alt="Yozda bulutli osmon ostidagi qabriston" loading="lazy"><figcaption>Yoz, bulutli kun</figcaption></figure>
+        <figure data-season="yoz"><img src="rasmlar/yozgi-daraxtlar.jpg" alt="Teraklar bilan o'ralgan qabriston, yoz" loading="lazy"><figcaption>Terakzor bilan o'ralgan</figcaption></figure>
       </div>
     </section>
 
@@ -568,9 +638,33 @@
       }
     }
     gallery.querySelectorAll('img').forEach(function (img) {
-      function drop() { img.closest('figure').remove(); checkGallery(); }
+      function drop() { img.closest('figure').remove(); checkGallery(); refreshChips(); }
       if (img.complete && img.naturalWidth === 0) drop(); else img.addEventListener('error', drop);
     });
+
+    // Yuklanmagan videolarni ham yashiramiz
+    gallery.querySelectorAll('video').forEach(function (v) {
+      v.addEventListener('error', function () { v.closest('figure').remove(); checkGallery(); refreshChips(); }, true);
+    });
+
+    // Fasl bo'yicha saralash; bo'sh fasl tugmasi yashiriladi
+    var chips = document.querySelectorAll('.chips button');
+    function refreshChips() {
+      document.querySelectorAll('.chips button').forEach(function (c) {
+        var f = c.getAttribute('data-filter');
+        if (f !== 'all') c.hidden = !gallery.querySelector('figure[data-season="' + f + '"]');
+      });
+    }
+    chips.forEach(function (c) {
+      c.addEventListener('click', function () {
+        var f = c.getAttribute('data-filter');
+        chips.forEach(function (x) { x.classList.toggle('active', x === c); });
+        gallery.querySelectorAll('figure').forEach(function (fig) {
+          fig.hidden = f !== 'all' && fig.getAttribute('data-season') !== f;
+        });
+      });
+    });
+    refreshChips();
 
     // Rasmni bosganda kattalashtirish
     var lb = document.getElementById('lightbox');
