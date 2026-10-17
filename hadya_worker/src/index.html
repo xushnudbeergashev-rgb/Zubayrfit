@@ -146,6 +146,9 @@ nav button.on{background:var(--lemon);color:var(--ink)}
 .slot .rm{position:absolute;top:-9px;right:-9px;width:28px;height:28px;border-radius:50%;background:var(--danger);color:#fff;
   border:2px solid var(--ink);font-size:16px;line-height:1;display:none}
 .slot.filled .rm{display:block}.slot.filled .pic svg{display:none}
+.slot.busy .pic{position:relative}.slot.busy .pic svg{display:none}
+.slot.busy .pic::after{content:"";width:28%;aspect-ratio:1;border-radius:50%;border:3px solid var(--blue);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .hint{font-size:13px;color:var(--muted);margin:12px 0 18px}
 .group{background:var(--white);border:2px solid var(--ink);border-radius:18px;padding:2px 14px;margin-bottom:14px}
 /* Ajratuvchi chiziq maydonning TEPASIGA, faqat oldida ko'rinadigan maydon bo'lsa chiziladi.
@@ -375,7 +378,7 @@ nav button{position:relative}
     </div>
     <input type="file" id="file" accept="image/*,video/*" hidden>
     <div id="f-media"><div class="err">Kamida bitta rasm yoki video qo'shing.</div></div>
-    <p class="hint">3 tagacha rasm yoki video (video 20 MB gacha).</p>
+    <p class="hint">3 tagacha rasm yoki video, birdaniga bir nechtasini tanlash mumkin (video 20 MB gacha).</p>
 
     <div class="group k-cat">
       <div class="field"><label class="lbl" for="breed">Zoti</label><input id="breed" maxlength="40" placeholder="Masalan, britan, oddiy"></div>
@@ -808,43 +811,95 @@ $$(".type").forEach(b => b.onclick = () => {
 });
 $("#backToType").onclick = () => { $("#stepForm").hidden = true; $("#stepType").hidden = false; kind = null; updateMainButton(); };
 
+let picking = false;
 $$(".slot").forEach(s => s.onclick = e => {
+  if (picking) return;
   const i = +s.dataset.i;
   if (e.target.classList.contains("rm")) return setMedia(i, null);
-  slotIdx = media[i] ? i : Math.max(0, media.findIndex(m => !m));
-  $("#file").value = ""; $("#file").click();
+  // To'la slot bosilsa, faqat o'sha almashtiriladi; bo'sh slot bosilsa, bir nechta fayl tanlash mumkin
+  slotIdx = media[i] ? i : -1;
+  const f = $("#file");
+  f.multiple = slotIdx < 0; f.value = ""; f.click();
 });
 $("#file").onchange = async () => {
-  const f = $("#file").files[0]; if (!f) return;
+  const files = [...$("#file").files]; $("#file").value = "";
+  if (!files.length || picking) return;
+  const slots = slotIdx >= 0 ? [slotIdx] : [0, 1, 2].filter(i => !media[i]);
+  const take = files.slice(0, slots.length), problems = [];
+  if (files.length > slots.length) problems.push(`Ko'pi bilan 3 ta rasm yoki video qo'shiladi. ${slots.length} tasi olindi.`);
+  picking = true;
+  take.forEach((_, k) => $(`.slot[data-i="${slots[k]}"]`).classList.add("busy"));
   try {
-    if (f.type.startsWith("video/")) {
-      if (f.size > 20 * 1024 * 1024) return say("Video 20 MB dan oshmasin. Qisqaroq video tanlang.");
-      setMedia(slotIdx, {blob: f, video: true});
-    } else setMedia(slotIdx, {blob: await compress(f), video: false});
-  } catch { say("Bu faylni ochib bo'lmadi. Boshqasini tanlang."); }
+    for (let k = 0; k < take.length; k++) {
+      const f = take[k], i = slots[k];
+      try {
+        if (f.type.startsWith("video/")) {
+          if (f.size > 20 * 1024 * 1024) { problems.push("Video 20 MB dan oshmasin. Qisqaroq video tanlang."); continue; }
+          setMedia(i, {blob: f, video: true});
+        } else setMedia(i, {blob: await compress(f), video: false});
+      } catch (err) {
+        problems.push(err?.message === "big" ? "Rasm juda katta. Boshqasini tanlang." : "Bu faylni ochib bo'lmadi. Boshqasini tanlang.");
+      } finally {
+        $(`.slot[data-i="${i}"]`).classList.remove("busy");
+      }
+      await new Promise(r => setTimeout(r, 0)); // ekran yangilanib tursin
+    }
+  } finally {
+    picking = false;
+    $$(".slot.busy").forEach(s => s.classList.remove("busy"));
+  }
+  // Bo'sh joy qolmasin: rasmlarni chapga suramiz (birinchisi "Asosiy" bo'ladi)
+  const list = media.filter(Boolean);
+  if (list.length && media.some((m, i) => !m && i < list.length)) [0, 1, 2].forEach(i => setMedia(i, list[i] || null, true));
+  if (problems.length) say([...new Set(problems)].join("\n"));
 };
-function setMedia(i, m) {
+function setMedia(i, m, keepUrl) {
+  const old = media[i];
+  if (old && old !== m && !keepUrl && !media.some((x, j) => j !== i && x === old)) URL.revokeObjectURL(old.url);
   media[i] = m;
   const s = $(`.slot[data-i="${i}"]`), pic = s.querySelector(".pic");
   pic.querySelector("video")?.remove(); pic.style.backgroundImage = "";
   if (m) {
-    const url = URL.createObjectURL(m.blob);
-    if (m.video) pic.insertAdjacentHTML("beforeend", `<video src="${url}" muted playsinline></video>`);
-    else pic.style.backgroundImage = `url(${url})`;
+    m.url ||= URL.createObjectURL(m.blob);
+    if (m.video) pic.insertAdjacentHTML("beforeend", `<video src="${m.url}#t=0.1" muted playsinline preload="metadata"></video>`);
+    else pic.style.backgroundImage = `url(${m.url})`;
   }
   s.classList.toggle("filled", !!m);
   $("#f-media").classList.remove("bad");
 }
-// Rasmni 1600px gacha kichraytirib JPEG qiladi (iPhone HEIC ham shu yerda JPEG'ga aylanadi)
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+// Rasmni 1600px gacha kichraytirib JPEG qiladi (iPhone HEIC ham shu yerda JPEG'ga aylanadi).
+// Ochilmasa yoki juda uzoq ketsa, ilova qotib qolmaydi: xato qaytadi yoki asl fayl olinadi.
 async function compress(file) {
-  const url = URL.createObjectURL(file);
-  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
-  const c = document.createElement("canvas");
-  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-  URL.revokeObjectURL(url);
-  return new Promise(res => c.toBlob(res, "image/jpeg", 0.85));
+  const MAX = 1600, okRaw = file.size <= 8 * 1024 * 1024 && /^image\/(jpeg|png|webp)$/.test(file.type);
+  let src, w, h, url;
+  try {
+    if (window.createImageBitmap) {
+      src = await withTimeout(createImageBitmap(file).catch(() => { throw new Error("decode"); }), 15000);
+      w = src.width; h = src.height;
+    } else {
+      url = URL.createObjectURL(file);
+      src = await withTimeout(new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("decode")); i.src = url; }), 15000);
+      w = src.naturalWidth; h = src.naturalHeight;
+    }
+    if (!w || !h) throw new Error("empty");
+    const k = Math.min(1, MAX / Math.max(w, h));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    src.close?.();
+    const blob = await withTimeout(new Promise(res => c.toBlob(res, "image/jpeg", 0.85)), 15000);
+    c.width = c.height = 0; // xotirani bo'shatish
+    if (blob && blob.size) return blob;
+    if (okRaw) return file;
+    throw new Error("encode");
+  } catch (err) {
+    // Rasm umuman ochilmasa, asl faylni ham yubormaymiz (u ham buzilgan bo'ladi)
+    if (okRaw && err?.message !== "decode") return file;
+    throw file.size > 8 * 1024 * 1024 ? new Error("big") : err;
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
 }
 $("#region").onchange = () => { fillDistricts($("#district"), $("#region").value, "Tanlang…"); $("#f-region").classList.remove("bad"); };
 $("#extra").oninput = () => $("#cnt").textContent = $("#extra").value.length;
@@ -901,11 +956,12 @@ function reviewRows() {
   return rows;
 }
 function submit() {
+  if (picking) return say("Rasmlar tayyorlanmoqda, bir soniya kuting.");
   if (sending || !validate()) return;
   const kinds = {hadya: ["Hadyaga mushuk · BEPUL", "var(--lemon)", "var(--ink)"], sotuv: ["Mushuk sotish", "var(--ink)", "#fff"], reklama: ["Reklama", "var(--blue)", "#fff"]}[kind];
   const pics = media.filter(Boolean).map(m => {
-    const url = URL.createObjectURL(m.blob);
-    return m.video ? `<div><video src="${url}" muted playsinline></video></div>` : `<div style="background-image:url(${url})"></div>`;
+    const url = m.url;
+    return m.video ? `<div><video src="${url}#t=0.1" muted playsinline preload="metadata"></video></div>` : `<div style="background-image:url(${url})"></div>`;
   }).join("");
   const rows = reviewRows().map(([k, x]) => `<div class="r"><span>${esc(k)}</span><b class="${x ? "" : "empty"}">${x ? esc(x) : "—"}</b></div>`).join("");
   const m = openModal(`
