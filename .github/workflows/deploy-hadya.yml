@@ -22,10 +22,15 @@ jobs:
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CF_WORKER: ${{ secrets.CF_WORKER_NAME }}
         run: |
-          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ] || [ -z "$CF_WORKER" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID yoki CF_WORKER_NAME secret'i yo'q"
-            exit 1
-          fi
+          # Nusxa olinganda tushib qolgan bo'sh joy va yangi qatorlarni olib tashlaymiz
+          CF_TOKEN=$(printf %s "$CF_TOKEN" | tr -d '[:space:]')
+          CF_ACCOUNT=$(printf %s "$CF_ACCOUNT" | tr -d '[:space:]')
+          CF_WORKER=$(printf %s "$CF_WORKER" | tr -d '[:space:]')
+          bad=0
+          [ -n "$CF_TOKEN" ] || { echo "::error::CLOUDFLARE_API_TOKEN bo'sh"; bad=1; }
+          [[ "$CF_ACCOUNT" =~ ^[0-9a-f]{32}$ ]] || { echo "::error::CLOUDFLARE_ACCOUNT_ID noto'g'ri: 32 ta belgi (0-9, a-f) bo'lishi kerak, hozir ${#CF_ACCOUNT} ta"; bad=1; }
+          [[ "$CF_WORKER" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || { echo "::error::CF_WORKER_NAME noto'g'ri: faqat kichik lotin harflari, raqam va - bo'lishi kerak (masalan hadya-bot)"; bad=1; }
+          [ $bad = 0 ] || exit 1
           res=$(curl -sS -X PUT \
             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/$CF_WORKER/content" \
             -H "Authorization: Bearer $CF_TOKEN" \
